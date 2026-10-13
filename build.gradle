@@ -19,6 +19,17 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Curse Maven'
+                url = 'https://cursemaven.com'
+            }
+        }
+        filter {
+            includeGroup 'curse.maven'
+        }
+    }
 }
 
 base {
@@ -140,6 +151,11 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+
+    // FTB mods via Curse Maven: curse.maven:<slug>-<projectId>:<fileId>
+    modImplementation 'curse.maven:ftb-library-forge-404465:8226927' // ftb-library-forge-2001.2.13
+    modImplementation 'curse.maven:ftb-teams-forge-404468:7499810'   // ftb-teams-forge-2001.3.2
+    modImplementation 'curse.maven:ftb-chunks-forge-314906:8216874'  // ftb-chunks-forge-2001.3.8
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
