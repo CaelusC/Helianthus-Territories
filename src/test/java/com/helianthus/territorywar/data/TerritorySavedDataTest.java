@@ -60,7 +60,7 @@ class TerritorySavedDataTest {
 
         data.setDirty(false);
         assertTrue(data.clearOwner(region.getId()));
-        assertNull(region.getOwnerTeamId());
+        assertNull(data.getRegion(region.getId()).orElseThrow().getOwnerTeamId());
         assertTrue(data.isDirty());
 
         data.setDirty(false);

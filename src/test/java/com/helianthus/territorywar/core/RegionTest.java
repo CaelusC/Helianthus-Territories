@@ -27,35 +27,40 @@ class RegionTest {
     }
 
     @Test
-    void assignOwnerMakesRegionOwned() {
-        Region region = unownedRegion(Set.of());
+    void withOwnerReturnsOwnedCopyAndLeavesOriginalUnchanged() {
+        Region region = unownedRegion(Set.of(new ChunkKey(0, 0, OVERWORLD)));
         UUID team = UUID.randomUUID();
-        region.assignOwner(team);
-        assertTrue(region.isOwned());
-        assertEquals(team, region.getOwnerTeamId());
+        Region owned = region.withOwner(team);
+        assertTrue(owned.isOwned());
+        assertEquals(team, owned.getOwnerTeamId());
+        assertFalse(region.isOwned());
+        assertEquals(region.getId(), owned.getId());
+        assertEquals(region.getName(), owned.getName());
+        assertEquals(region.getChunks(), owned.getChunks());
+        assertEquals(region.getPurchasePrice(), owned.getPurchasePrice());
+        assertEquals(region.isForSale(), owned.isForSale());
     }
 
     @Test
-    void assignOwnerReplacesExistingOwner() {
+    void withOwnerReplacesExistingOwner() {
         Region region = new Region(RegionId.random(), "spawn", Set.of(), UUID.randomUUID(), 100, true);
         UUID newTeam = UUID.randomUUID();
-        region.assignOwner(newTeam);
-        assertEquals(newTeam, region.getOwnerTeamId());
+        assertEquals(newTeam, region.withOwner(newTeam).getOwnerTeamId());
     }
 
     @Test
-    void clearOwnerMakesRegionUnowned() {
-        Region region = unownedRegion(Set.of());
-        region.assignOwner(UUID.randomUUID());
-        region.clearOwner();
-        assertFalse(region.isOwned());
-        assertNull(region.getOwnerTeamId());
+    void withoutOwnerReturnsUnownedCopy() {
+        Region owned = unownedRegion(Set.of()).withOwner(UUID.randomUUID());
+        Region cleared = owned.withoutOwner();
+        assertFalse(cleared.isOwned());
+        assertNull(cleared.getOwnerTeamId());
+        assertTrue(owned.isOwned());
     }
 
     @Test
-    void assignOwnerRejectsNull() {
+    void withOwnerRejectsNull() {
         Region region = unownedRegion(Set.of());
-        assertThrows(NullPointerException.class, () -> region.assignOwner(null));
+        assertThrows(NullPointerException.class, () -> region.withOwner(null));
     }
 
     @Test
