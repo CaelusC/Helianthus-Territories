@@ -121,7 +121,23 @@ Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:821
 - Callbacks: `CompoundEventResult<ClaimResult> Before#before(CommandSourceStack source, ClaimedChunk chunk)`, `void After#after(CommandSourceStack source, ClaimedChunk chunk)`
 - Class: `dev.ftb.mods.ftbchunks.api.event.ClaimedChunkEvent`
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
-- Notes: `Event` / `CompoundEventResult` are Architectury types (`dev.architectury.event`). Their registration signatures are not recorded here yet; verify against the Architectury jar before use. In `claim`, a non-null result object from `BEFORE_CLAIM` that is not `isSuccess()` aborts the claim and is returned.
+- Notes: `Event` / `CompoundEventResult` are Architectury types (`dev.architectury.event`), see the Architectury section below. These are not Forge bus events; register a callback on the static field. In `claim`, `BEFORE_CLAIM`'s `CompoundEventResult#object()` is read: a non-null result that is not `isSuccess()` aborts the claim and is returned (also when check-only). The source is the player's `createCommandSourceStack()` for map-screen claims (`dev.ftb.mods.ftbchunks.net.RequestChunkChangePacket`).
+
+## Architectury
+
+Artifact/version for every entry below: `curse.maven:architectury-api-419699:5137938` (architectury 9.2.14).
+
+### Event#register / #unregister
+- Signature: `void register(T listener)`, `void unregister(T listener)`, `boolean isRegistered(T listener)`, `T invoker()`
+- Class: `dev.architectury.event.Event`
+- Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: used to subscribe to `ClaimedChunkEvent` fields.
+
+### CompoundEventResult (selected methods)
+- Signature: `static <T> CompoundEventResult<T> pass()`, `static <T> CompoundEventResult<T> interruptFalse(T)`, `static <T> CompoundEventResult<T> interruptTrue(T)`, `static <T> CompoundEventResult<T> interruptDefault(T)`, `T object()`
+- Class: `dev.architectury.event.CompoundEventResult`
+- Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: `ClaimResult.customProblem(id)` uses `id` as a translation key for its message (`Component.translatable`).
 
 ## Open questions
 
