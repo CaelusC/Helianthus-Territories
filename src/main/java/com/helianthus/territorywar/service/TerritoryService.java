@@ -8,10 +8,11 @@ import com.mojang.logging.LogUtils;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.slf4j.Logger;
 
 /**
- * Single entrypoint for creating and deleting regions. Keeps {@link TerritorySavedData} and its
+ * Single entrypoint for creating, deleting and selling regions. Keeps {@link TerritorySavedData} and its
  * region index in sync and logs one audit line per state change.
  */
 public final class TerritoryService {
@@ -53,6 +54,25 @@ public final class TerritoryService {
         data.removeRegion(regionId);
         LOGGER.info("Region deleted: id={} name={} chunks={}",
                 regionId.value(), region.get().getName(), region.get().getChunks().size());
+        return true;
+    }
+
+    /**
+     * Gives an unowned, for-sale region to the team and takes it off the market. Returns
+     * {@code false}, leaving state unchanged, if the region is unknown, owned or not for sale.
+     */
+    public boolean completePurchase(RegionId regionId, UUID teamId) {
+        Objects.requireNonNull(regionId, "regionId");
+        Objects.requireNonNull(teamId, "teamId");
+        Optional<Region> region = data.getRegion(regionId);
+        if (region.isEmpty() || region.get().isOwned() || !region.get().isForSale()) {
+            return false;
+        }
+        data.assignOwner(regionId, teamId);
+        data.setForSale(regionId, false);
+        LOGGER.info("Region sold: id={} name={} team={} chunks={} price={}",
+                regionId.value(), region.get().getName(), teamId, region.get().getChunks().size(),
+                region.get().getPurchasePrice());
         return true;
     }
 
