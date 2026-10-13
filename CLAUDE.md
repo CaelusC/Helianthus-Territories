@@ -1,4 +1,4 @@
-# Helianthus Territories — Working Agreement
+# Helianthus Territories Working Agreement
 
 ## Platform
 - Minecraft 1.20.1, Forge 47.x (`forge_version` in `gradle.properties`).
@@ -22,8 +22,8 @@
 
 ## Small slices
 - One ticket = one branch = one focused change. Do not touch anything outside the ticket's scope.
-- Research the relevant code before every change; no guessing at APIs or behaviour.
+- Research the relevant code before every change. Do not guess at APIs or behaviour.
 - `./gradlew build` must pass after every change.
-- Split commits logically; commit format: `{type}: one sentence describing what was done`.
-- No new dependencies or schema/data format changes unless the ticket requires it; document why when added.
+- Split commits logically. Commit format: `type: short imperative description`, lowercase, no period, under 72 characters.
+- No new dependencies or schema/data format changes unless the ticket requires it. Document why when one is added.
 - If something is unclear or missing, stop and flag it instead of inventing a solution.
