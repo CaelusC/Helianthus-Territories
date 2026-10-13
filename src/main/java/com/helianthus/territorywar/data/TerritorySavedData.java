@@ -89,7 +89,7 @@ public final class TerritorySavedData extends SavedData {
         if (region == null) {
             return false;
         }
-        region.assignOwner(teamId);
+        regions.put(id, region.withOwner(teamId));
         setDirty();
         return true;
     }
@@ -100,7 +100,7 @@ public final class TerritorySavedData extends SavedData {
         if (region == null) {
             return false;
         }
-        region.clearOwner();
+        regions.put(id, region.withoutOwner());
         setDirty();
         return true;
     }

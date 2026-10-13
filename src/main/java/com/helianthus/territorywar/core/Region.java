@@ -5,7 +5,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A named territory made of a fixed set of chunks, optionally owned by a team.
+ * Immutable named territory made of a fixed set of chunks, optionally owned by a team.
+ * Ownership changes produce a new instance; persist them through {@code TerritorySavedData}.
  */
 public final class Region {
     private final RegionId id;
@@ -13,7 +14,7 @@ public final class Region {
     private final Set<ChunkKey> chunks;
     private final int purchasePrice;
     private final boolean forSale;
-    private UUID ownerTeamId;
+    private final UUID ownerTeamId;
 
     public Region(RegionId id, String name, Set<ChunkKey> chunks, UUID ownerTeamId, int purchasePrice, boolean forSale) {
         this.id = Objects.requireNonNull(id, "id");
@@ -58,11 +59,13 @@ public final class Region {
         return ownerTeamId != null;
     }
 
-    public void assignOwner(UUID teamId) {
-        ownerTeamId = Objects.requireNonNull(teamId, "teamId");
+    /** Copy of this region owned by the given team. */
+    public Region withOwner(UUID teamId) {
+        return new Region(id, name, chunks, Objects.requireNonNull(teamId, "teamId"), purchasePrice, forSale);
     }
 
-    public void clearOwner() {
-        ownerTeamId = null;
+    /** Copy of this region with no owner. */
+    public Region withoutOwner() {
+        return new Region(id, name, chunks, null, purchasePrice, forSale);
     }
 }

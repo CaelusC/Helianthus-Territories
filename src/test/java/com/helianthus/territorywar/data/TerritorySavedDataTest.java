@@ -60,7 +60,7 @@ class TerritorySavedDataTest {
 
         data.setDirty(false);
         assertTrue(data.clearOwner(region.getId()));
-        assertNull(region.getOwnerTeamId());
+        assertNull(data.getRegion(region.getId()).orElseThrow().getOwnerTeamId());
         assertTrue(data.isDirty());
 
         data.setDirty(false);
@@ -68,6 +68,32 @@ class TerritorySavedDataTest {
         assertTrue(data.isDirty());
         assertTrue(data.getRegion(region.getId()).isEmpty());
         assertTrue(data.getIndex().getRegion(new ChunkKey(0, 0, OVERWORLD)).isEmpty());
+    }
+
+    @Test
+    void ownershipChangesUpdateStoredRegionAndKeepIndex() {
+        ChunkKey chunk = new ChunkKey(0, 0, OVERWORLD);
+        Region region = new Region(RegionId.random(), "spawn", Set.of(chunk), null, 100, true);
+        TerritorySavedData data = new TerritorySavedData();
+        data.addRegion(region);
+        data.setDirty(false);
+
+        UUID team = UUID.randomUUID();
+        assertTrue(data.assignOwner(region.getId(), team));
+        assertTrue(data.isDirty());
+        Region stored = data.getRegion(region.getId()).orElseThrow();
+        assertEquals(team, stored.getOwnerTeamId());
+        assertEquals(region.getChunks(), stored.getChunks());
+        assertEquals(1, data.getRegions().size());
+        assertEquals(Optional.of(region.getId()), data.getIndex().getRegion(chunk));
+        assertNull(region.getOwnerTeamId());
+
+        data.setDirty(false);
+        assertTrue(data.clearOwner(region.getId()));
+        assertTrue(data.isDirty());
+        assertFalse(data.getRegion(region.getId()).orElseThrow().isOwned());
+        assertEquals(1, data.getRegions().size());
+        assertEquals(Optional.of(region.getId()), data.getIndex().getRegion(chunk));
     }
 
     @Test
