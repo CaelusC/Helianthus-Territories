@@ -157,6 +157,16 @@ dependencies {
     modImplementation 'curse.maven:ftb-library-forge-404465:8226927' // ftb-library-forge-2001.2.13
     modImplementation 'curse.maven:ftb-teams-forge-404468:7499810'   // ftb-teams-forge-2001.3.2
     modImplementation 'curse.maven:ftb-chunks-forge-314906:8216874'  // ftb-chunks-forge-2001.3.8
+
+    // JUnit 5 for pure-Java core unit tests (no Minecraft launch)
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.4'
+    // Gradle's bundled launcher is older than 5.14; pin it to match the engine
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.4'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
