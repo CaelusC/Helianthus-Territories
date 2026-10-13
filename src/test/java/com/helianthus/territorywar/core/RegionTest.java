@@ -64,6 +64,19 @@ class RegionTest {
     }
 
     @Test
+    void withForSaleReturnsCopyAndKeepsOwner() {
+        UUID team = UUID.randomUUID();
+        Region region = unownedRegion(Set.of(new ChunkKey(0, 0, OVERWORLD))).withOwner(team);
+        Region withdrawn = region.withForSale(false);
+        assertFalse(withdrawn.isForSale());
+        assertEquals(team, withdrawn.getOwnerTeamId());
+        assertEquals(region.getId(), withdrawn.getId());
+        assertEquals(region.getChunks(), withdrawn.getChunks());
+        assertEquals(region.getPurchasePrice(), withdrawn.getPurchasePrice());
+        assertTrue(region.isForSale());
+    }
+
+    @Test
     void containsChunkIsDimensionAware() {
         Region region = unownedRegion(Set.of(new ChunkKey(0, 0, OVERWORLD), new ChunkKey(1, 0, OVERWORLD)));
         assertTrue(region.containsChunk(new ChunkKey(0, 0, OVERWORLD)));
