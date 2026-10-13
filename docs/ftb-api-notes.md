@@ -56,6 +56,18 @@ Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: `getExtraData()` + `markDirty()` is the API-level way to persist custom per-team NBT. `isPlayerTeam` / `isPartyTeam` / `isServerTeam` are default methods.
 
+### Team#getRankForPlayer
+- Signature: `TeamRank getRankForPlayer(UUID playerId)`
+- Class: `dev.ftb.mods.ftbteams.api.Team`
+- Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: also present: `Map<UUID, TeamRank> getPlayersByRank(TeamRank)`.
+
+### TeamRank
+- Signature: enum constants `ENEMY`, `NONE`, `ALLY`, `INVITED`, `MEMBER`, `OFFICER`, `OWNER`; `boolean isAtLeast(TeamRank)`, `boolean isMemberOrBetter()`, `boolean isOfficerOrBetter()`, `boolean isOwner()`, `int getPower()`
+- Class: `dev.ftb.mods.ftbteams.api.TeamRank`
+- Verified: `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: `isXOrBetter()` / `isOwner()` all delegate to `isAtLeast(X)`, which compares `power` and returns false when the argument's power is negative.
+
 ## FTB Chunks
 
 Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:8216874` (ftbchunks 2001.3.8).
