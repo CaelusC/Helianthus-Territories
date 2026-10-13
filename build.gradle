@@ -165,6 +165,12 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.14.4'
 }
 
+// MDG legacyforge has no unitTest {} block; expose Minecraft classes to tests that use NBT/SavedData directly
+configurations {
+    testCompileClasspath.extendsFrom compileClasspath
+    testRuntimeClasspath.extendsFrom runtimeClasspath
+}
+
 tasks.named('test', Test).configure {
     useJUnitPlatform()
 }

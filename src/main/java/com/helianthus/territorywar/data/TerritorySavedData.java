@@ -72,6 +72,39 @@ public final class TerritorySavedData extends SavedData {
         setDirty();
     }
 
+    /** Removes the region and its chunk mappings. Returns {@code false} if it was not stored. */
+    public boolean removeRegion(RegionId id) {
+        Objects.requireNonNull(id, "id");
+        if (regions.remove(id) == null) {
+            return false;
+        }
+        index.removeRegion(id);
+        setDirty();
+        return true;
+    }
+
+    /** Assigns the owning team. Returns {@code false} if the region is not stored. */
+    public boolean assignOwner(RegionId id, UUID teamId) {
+        Region region = regions.get(Objects.requireNonNull(id, "id"));
+        if (region == null) {
+            return false;
+        }
+        region.assignOwner(teamId);
+        setDirty();
+        return true;
+    }
+
+    /** Clears the owning team. Returns {@code false} if the region is not stored. */
+    public boolean clearOwner(RegionId id) {
+        Region region = regions.get(Objects.requireNonNull(id, "id"));
+        if (region == null) {
+            return false;
+        }
+        region.clearOwner();
+        setDirty();
+        return true;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putInt(TAG_DATA_VERSION, DATA_VERSION);
