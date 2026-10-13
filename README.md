@@ -1,32 +1,42 @@
 # Helianthus-Territories
-A mod made for Helianthus minecraft community, it closely relies on the mod FTB:Chunks
 
+A mod made for the Helianthus Minecraft community. It closely relies on the mod FTB Chunks.
 
-Installation information
-=======
+## Prerequisites
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+- Java 17 (JDK). The Gradle toolchain is pinned to 17; newer JDKs are not supported for compiling.
+- No separate Gradle install is needed — use the bundled wrapper (`./gradlew`, or `gradlew.bat` on Windows).
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+Target platform: Minecraft 1.20.1, Forge 47.x, built with [ModDevGradle Legacy](https://github.com/neoforged/ModDevGradle/blob/main/LEGACY.md).
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+## Building
 
-Mapping Names:
-============
-The MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+```sh
+./gradlew build
+```
 
-MDG Legacy:
-==========
-This template uses [ModDevGradle Legacy](https://github.com/neoforged/ModDevGradle). Documentation can be found [here](https://github.com/neoforged/ModDevGradle/blob/main/LEGACY.md).
+The mod jar is written to `build/libs/`.
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+## Testing
+
+```sh
+./gradlew test
+```
+
+## Development commands
+
+| Command | What it does |
+| --- | --- |
+| `./gradlew runClient` | Launches a dev Minecraft client with the mod loaded |
+| `./gradlew runServer` | Launches a dev dedicated server (`--nogui`) |
+| `./gradlew runGameTestServer` | Runs all registered game tests, then exits |
+| `./gradlew runData` | Runs data generators into `src/generated/resources/` |
+| `./gradlew clean` | Deletes build output |
+| `./gradlew --refresh-dependencies` | Refreshes the local dependency cache |
+
+Run directories (`run/`, `runs/`, `run-data/`), build output and IDE metadata are git-ignored.
+
+## Mapping names
+
+The project uses official Mojang mapping names with Parchment parameter names. Mojang's names are covered by a
+specific license; see https://github.com/NeoForged/NeoForm/blob/main/Mojang.md.
