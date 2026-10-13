@@ -135,6 +135,21 @@ Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:821
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: `Event` / `CompoundEventResult` are Architectury types (`dev.architectury.event`), see the Architectury section below. These are not Forge bus events; register a callback on the static field. In `claim`, `BEFORE_CLAIM`'s `CompoundEventResult#object()` is read: a non-null result that is not `isSuccess()` aborts the claim and is returned (also when check-only). The source is the player's `createCommandSourceStack()` for map-screen claims (`dev.ftb.mods.ftbchunks.net.RequestChunkChangePacket`).
 
+### ChunkTeamDataImpl#markDirty / #updateLimits (internal)
+- Signature: `void markDirty()`, `void updateLimits()`
+- Class: `dev.ftb.mods.ftbchunks.data.ChunkTeamDataImpl` (implements `ChunkTeamData`; not an `api` type)
+- Verified: `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes:
+  - Internal class, used only because the `api` interfaces have no way to persist an extra-claim change. Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump.
+  - `ClaimedChunkManager#getPersonalData` / `#getOrCreateData` return `ChunkTeamDataImpl` at runtime (`ClaimedChunkManagerImpl` declares the covariant return type). `getPersonalData` returns null when the player has no personal team.
+  - `updateLimits` recomputes `maxClaimChunks` / `maxForceLoadChunks`. For a party team it aggregates member personal data according to `FTBChunksWorldConfig.PARTY_LIMIT_MODE` (`LARGEST`, `OWNER`, `SUM`, `AVERAGE`); the owner's personal data counts in every mode.
+
+### SendGeneralDataPacket#send (internal)
+- Signature: `static void send(ChunkTeamData data, ServerPlayer player)`, `static void send(ChunkTeamData data, Collection<ServerPlayer> players)`
+- Class: `dev.ftb.mods.ftbchunks.net.SendGeneralDataPacket` (not an `api` type)
+- Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: pushes claim/force-load limits to clients. FTB's `/ftbchunks extra_claim_chunks` flow (from `javap -c` of `FTBChunksCommands#setExtraClaimChunks`): `getPersonalData(uuid).setExtraClaimChunks(n)`, `.markDirty()`, `getOrCreateData(player).updateLimits()`, `SendGeneralDataPacket.send(thatData, player)`.
+
 ## Architectury
 
 Artifact/version for every entry below: `curse.maven:architectury-api-419699:5137938` (architectury 9.2.14).
@@ -153,4 +168,4 @@ Artifact/version for every entry below: `curse.maven:architectury-api-419699:513
 
 ## Open questions
 
-- Persisting a changed extra-claim value: `ChunkTeamData` exposes no `markDirty()` or `updateLimits()`. FTB's command uses impl-only methods (`ChunkTeamDataImpl#markDirty`, `#updateLimits`, `SendGeneralDataPacket.send`). Phase 1 needs a decision on whether to depend on the `data` impl package or find another route.
+- Resolved (T18): persisting a changed extra-claim value uses the internal `ChunkTeamDataImpl#markDirty` / `#updateLimits` and `SendGeneralDataPacket.send`, mirroring FTB's own command. Acceptable because FTB Chunks is pinned to 2001.3.8.
