@@ -1,3 +1,9 @@
 {
-  "territorywar.claim.manual_disabled": "Manual chunk claiming is disabled. Purchase a region to claim territory."
+  "territorywar.claim.manual_disabled": "Manual chunk claiming is disabled. Purchase a region to claim territory.",
+  "territorywar.command.create.success": "Created region %s with id %s",
+  "territorywar.command.create.overlap": "This chunk already belongs to a region",
+  "territorywar.command.delete.success": "Deleted region %s",
+  "territorywar.command.unknown_region": "No region with id %s",
+  "territorywar.command.buy.success": "Your team bought region %s",
+  "territorywar.command.buy.failed": "Could not buy region %s. It must be for sale, you must lead your team, and you must be able to pay its price."
 }
