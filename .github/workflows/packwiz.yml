@@ -1,0 +1,71 @@
+name: Packwiz Export
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # packwiz publishes no tagged releases, so pin a commit for reproducible exports
+  PACKWIZ_REF: 170b22d785959dda5876b54b7f16e1b807a57fb6
+  MODPACK_ZIP: helianthus-territories-modpack.zip
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install packwiz
+        run: go install github.com/packwiz/packwiz@${{ env.PACKWIZ_REF }}
+
+      # local jars are not metafiles, so curseforge export ships them under overrides/mods
+      - name: Add mod jar to pack
+        run: cp build/libs/territorywar-*.jar packwiz/mods/
+
+      - name: Refresh pack index
+        working-directory: packwiz
+        run: packwiz refresh
+
+      - name: Export modpack
+        working-directory: packwiz
+        run: packwiz curseforge export -o "${{ env.MODPACK_ZIP }}"
+
+      - name: Upload modpack artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: modpack
+          path: packwiz/${{ env.MODPACK_ZIP }}
+
+      # release.yml creates the release on the same tag push, so wait for it before attaching
+      - name: Attach modpack to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 30); do
+            gh release view "${{ github.ref_name }}" > /dev/null 2>&1 && break
+            sleep 20
+          done
+          gh release upload "${{ github.ref_name }}" "packwiz/${{ env.MODPACK_ZIP }}" --clobber
