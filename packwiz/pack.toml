@@ -1,0 +1,13 @@
+name = "Helianthus Territories"
+author = "Caelus"
+version = "1.0.0"
+pack-format = "packwiz:1.1.0"
+
+[index]
+file = "index.toml"
+hash-format = "sha256"
+hash = "17d66e8fb9450695261d8d9104d3485040d7f8ec1054a25411ed446795cbf309"
+
+[versions]
+forge = "47.3.0"
+minecraft = "1.20.1"
