@@ -68,4 +68,9 @@ public final class Region {
     public Region withoutOwner() {
         return new Region(id, name, chunks, null, purchasePrice, forSale);
     }
+
+    /** Copy of this region with the given for-sale flag. */
+    public Region withForSale(boolean forSale) {
+        return new Region(id, name, chunks, ownerTeamId, purchasePrice, forSale);
+    }
 }

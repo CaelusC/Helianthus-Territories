@@ -105,6 +105,17 @@ public final class TerritorySavedData extends SavedData {
         return true;
     }
 
+    /** Sets whether the region is for sale. Returns {@code false} if the region is not stored. */
+    public boolean setForSale(RegionId id, boolean forSale) {
+        Region region = regions.get(Objects.requireNonNull(id, "id"));
+        if (region == null) {
+            return false;
+        }
+        regions.put(id, region.withForSale(forSale));
+        setDirty();
+        return true;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putInt(TAG_DATA_VERSION, DATA_VERSION);

@@ -11,6 +11,7 @@ import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.data.TerritorySavedData;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class TerritoryServiceTest {
@@ -75,6 +76,61 @@ class TerritoryServiceTest {
         TerritoryService service = new TerritoryService(data);
 
         assertFalse(service.deleteRegion(RegionId.random()));
+        assertFalse(data.isDirty());
+    }
+
+    @Test
+    void completePurchaseAssignsOwnerAndClearsForSale() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        RegionId id = service.createRegion("spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), 100, true);
+        data.setDirty(false);
+        UUID team = UUID.randomUUID();
+
+        assertTrue(service.completePurchase(id, team));
+
+        Region region = service.getRegion(id).orElseThrow();
+        assertEquals(team, region.getOwnerTeamId());
+        assertFalse(region.isForSale());
+        assertTrue(data.isDirty());
+    }
+
+    @Test
+    void completePurchaseRejectsRegionNotForSale() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        RegionId id = service.createRegion("spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), 100, false);
+        data.setDirty(false);
+
+        assertFalse(service.completePurchase(id, UUID.randomUUID()));
+
+        assertFalse(service.getRegion(id).orElseThrow().isOwned());
+        assertFalse(data.isDirty());
+    }
+
+    @Test
+    void completePurchaseRejectsOwnedRegion() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        RegionId id = service.createRegion("spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), 100, true);
+        UUID owner = UUID.randomUUID();
+        data.assignOwner(id, owner);
+        data.setDirty(false);
+
+        assertFalse(service.completePurchase(id, UUID.randomUUID()));
+
+        Region region = service.getRegion(id).orElseThrow();
+        assertEquals(owner, region.getOwnerTeamId());
+        assertTrue(region.isForSale());
+        assertFalse(data.isDirty());
+    }
+
+    @Test
+    void completePurchaseOfUnknownRegionReturnsFalse() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+
+        assertFalse(service.completePurchase(RegionId.random(), UUID.randomUUID()));
         assertFalse(data.isDirty());
     }
 }

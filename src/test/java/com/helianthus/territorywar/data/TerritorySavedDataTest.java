@@ -97,6 +97,22 @@ class TerritorySavedDataTest {
     }
 
     @Test
+    void setForSaleUpdatesStoredRegionAndKeepsOwner() {
+        UUID team = UUID.randomUUID();
+        Region region = new Region(RegionId.random(), "spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), team, 100, true);
+        TerritorySavedData data = new TerritorySavedData();
+        data.addRegion(region);
+        data.setDirty(false);
+
+        assertTrue(data.setForSale(region.getId(), false));
+
+        Region stored = data.getRegion(region.getId()).orElseThrow();
+        assertFalse(stored.isForSale());
+        assertEquals(team, stored.getOwnerTeamId());
+        assertTrue(data.isDirty());
+    }
+
+    @Test
     void mutationsOnUnknownRegionLeaveDataClean() {
         TerritorySavedData data = new TerritorySavedData();
         RegionId missing = RegionId.random();
@@ -104,6 +120,7 @@ class TerritorySavedDataTest {
         assertFalse(data.removeRegion(missing));
         assertFalse(data.assignOwner(missing, UUID.randomUUID()));
         assertFalse(data.clearOwner(missing));
+        assertFalse(data.setForSale(missing, false));
         assertFalse(data.isDirty());
     }
 }
