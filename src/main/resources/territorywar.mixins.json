@@ -6,6 +6,9 @@
   "client": [
     "ColorUtilsMixin",
     "FTBChunksClientMixin",
+    "LargeMapScreenMixin",
+    "MapTileWidgetMixin",
+    "RegionMapPanelMixin",
     "RenderMapImageTaskMixin"
   ],
   "injectors": {

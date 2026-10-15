@@ -29,6 +29,11 @@ public final class TerritoryService {
      * leaving state unchanged, if any chunk already belongs to another region.
      */
     public RegionId createRegion(String name, Set<ChunkKey> chunks, int purchasePrice, boolean forSale) {
+        return createRegion(name, chunks, purchasePrice, forSale, Region.DEFAULT_COLOR);
+    }
+
+    /** Like {@link #createRegion(String, Set, int, boolean)}, shown on the map in {@code colorRgb} while unowned. */
+    public RegionId createRegion(String name, Set<ChunkKey> chunks, int purchasePrice, boolean forSale, int colorRgb) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(chunks, "chunks");
         for (ChunkKey chunk : chunks) {
@@ -37,7 +42,7 @@ public final class TerritoryService {
                 throw new IllegalArgumentException("chunk " + chunk + " already belongs to region " + existing.get());
             }
         }
-        Region region = new Region(RegionId.random(), name, chunks, null, purchasePrice, forSale);
+        Region region = new Region(RegionId.random(), name, chunks, null, purchasePrice, forSale, colorRgb);
         data.addRegion(region);
         LOGGER.info("Region created: id={} name={} chunks={} price={} forSale={}",
                 region.getId().value(), name, region.getChunks().size(), purchasePrice, forSale);

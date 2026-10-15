@@ -37,6 +37,7 @@ public final class TerritorySavedData extends SavedData {
     private static final String TAG_OWNER_TEAM_ID = "ownerTeamId";
     private static final String TAG_PRICE = "price";
     private static final String TAG_FOR_SALE = "forSale";
+    private static final String TAG_COLOR = "color";
     private static final String TAG_CHUNKS = "chunks";
     private static final String TAG_CHUNK_X = "x";
     private static final String TAG_CHUNK_Z = "z";
@@ -167,6 +168,7 @@ public final class TerritorySavedData extends SavedData {
         }
         tag.putInt(TAG_PRICE, region.getPurchasePrice());
         tag.putBoolean(TAG_FOR_SALE, region.isForSale());
+        tag.putInt(TAG_COLOR, region.getColorRgb());
         ListTag chunkList = new ListTag();
         for (ChunkKey chunk : region.getChunks()) {
             CompoundTag chunkTag = new CompoundTag();
@@ -189,7 +191,8 @@ public final class TerritorySavedData extends SavedData {
             chunks.add(new ChunkKey(chunkTag.getInt(TAG_CHUNK_X), chunkTag.getInt(TAG_CHUNK_Z),
                     chunkTag.getString(TAG_DIMENSION)));
         }
+        int color = tag.contains(TAG_COLOR, Tag.TAG_INT) ? tag.getInt(TAG_COLOR) : Region.DEFAULT_COLOR;
         return new Region(id, tag.getString(TAG_NAME), chunks, owner, tag.getInt(TAG_PRICE),
-                tag.getBoolean(TAG_FOR_SALE));
+                tag.getBoolean(TAG_FOR_SALE), color);
     }
 }

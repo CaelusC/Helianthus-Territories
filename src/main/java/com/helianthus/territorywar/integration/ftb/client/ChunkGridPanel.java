@@ -128,7 +128,7 @@ final class ChunkGridPanel extends Panel {
         super.mouseReleased(button);
     }
 
-    private static Optional<Team> ownerTeam(Region region) {
+    static Optional<Team> ownerTeam(Region region) {
         if (!region.isOwned() || !FTBTeamsAPI.api().isClientManagerLoaded()) {
             return Optional.empty();
         }

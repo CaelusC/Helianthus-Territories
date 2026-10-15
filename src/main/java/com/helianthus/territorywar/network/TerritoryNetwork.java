@@ -125,7 +125,8 @@ public final class TerritoryNetwork {
                     return;
                 }
             }
-            RegionId id = territory.createRegion(request.name(), request.chunks(), request.price(), request.forSale());
+            RegionId id = territory.createRegion(request.name(), request.chunks(), request.price(),
+                    request.forSale(), request.colorRgb());
             syncRegionsToAll(player.server);
             player.sendSystemMessage(Component.translatable("territorywar.command.create.success",
                     request.name(), id.value().toString()));

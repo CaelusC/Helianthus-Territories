@@ -27,6 +27,7 @@ public final class RegionSyncCodec {
             }
             buf.writeInt(region.getPurchasePrice());
             buf.writeBoolean(region.isForSale());
+            buf.writeInt(region.getColorRgb());
             buf.writeVarInt(region.getChunks().size());
             for (ChunkKey chunk : region.getChunks()) {
                 buf.writeInt(chunk.chunkX());
@@ -45,12 +46,13 @@ public final class RegionSyncCodec {
             UUID owner = buf.readBoolean() ? buf.readUUID() : null;
             int price = buf.readInt();
             boolean forSale = buf.readBoolean();
+            int color = buf.readInt();
             int chunkCount = buf.readVarInt();
             Set<ChunkKey> chunks = new HashSet<>();
             for (int j = 0; j < chunkCount; j++) {
                 chunks.add(new ChunkKey(buf.readInt(), buf.readInt(), buf.readUtf()));
             }
-            regions.add(new Region(id, name, chunks, owner, price, forSale));
+            regions.add(new Region(id, name, chunks, owner, price, forSale, color));
         }
         return regions;
     }

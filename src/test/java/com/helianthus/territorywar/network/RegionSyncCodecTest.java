@@ -18,7 +18,7 @@ class RegionSyncCodecTest {
     @Test
     void roundTripsOwnedAndUnownedRegions() {
         Region unowned = new Region(RegionId.random(), "Plains", Set.of(new ChunkKey(1, -2, "minecraft:overworld"),
-                new ChunkKey(3, 4, "minecraft:the_nether")), null, 12, true);
+                new ChunkKey(3, 4, "minecraft:the_nether")), null, 12, true, 0x2E8B57);
         Region owned = new Region(RegionId.random(), "Hills", Set.of(new ChunkKey(0, 0, "minecraft:overworld")),
                 UUID.randomUUID(), 5, false);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
@@ -30,6 +30,22 @@ class RegionSyncCodecTest {
         assertSameRegion(unowned, read.get(0));
         assertNull(read.get(0).getOwnerTeamId());
         assertSameRegion(owned, read.get(1));
+        assertEquals(0, buf.readableBytes());
+    }
+
+    @Test
+    void roundTripsCustomAndDefaultColor() {
+        Region custom = new Region(RegionId.random(), "Coast", Set.of(new ChunkKey(9, 9, "minecraft:overworld")),
+                null, 40, true, 0x1E90FF);
+        Region plain = new Region(RegionId.random(), "Moor", Set.of(new ChunkKey(8, 9, "minecraft:overworld")),
+                null, 40, true);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+
+        RegionSyncCodec.write(buf, List.of(custom, plain));
+        List<Region> read = RegionSyncCodec.read(buf);
+
+        assertEquals(0x1E90FF, read.get(0).getColorRgb());
+        assertEquals(Region.DEFAULT_COLOR, read.get(1).getColorRgb());
         assertEquals(0, buf.readableBytes());
     }
 
@@ -49,5 +65,6 @@ class RegionSyncCodecTest {
         assertEquals(expected.getOwnerTeamId(), actual.getOwnerTeamId());
         assertEquals(expected.getPurchasePrice(), actual.getPurchasePrice());
         assertEquals(expected.isForSale(), actual.isForSale());
+        assertEquals(expected.getColorRgb(), actual.getColorRgb());
     }
 }
