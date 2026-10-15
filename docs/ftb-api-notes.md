@@ -47,6 +47,17 @@ Entry format:
 - Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: client only. Used from `integration.ftb.client` only.
 
+### FTB Library UI dialogs, text input and drag (admin region creation)
+- Signatures:
+  - `BaseScreen()` stores `Minecraft.getInstance().screen` as the previous screen; `final void closeGui(boolean openPrevScreen)` reopens it when `usePreviousScreenOnBack()` (true by default); reopening a `ScreenWrapper` runs `initGui()`, which calls `refreshWidgets()` on the same `BaseScreen` instance
+  - `TextBox(Panel parent)`, `final String getText()`, `void setMaxLength(int)`, `void setFilter(Predicate<String>)` (`insertText` rejects an edit whose resulting text fails the filter)
+  - `SimpleTextButton#setTitle(Component)`; `SimpleTextButton` has a static `create(Panel, Component, Icon, Consumer<MouseButton>, Component...)`, so subclasses must not declare a no-arg `create()`
+  - `Widget`: `boolean shouldDraw()`, `boolean isEnabled()` (`Panel#mousePressed` skips children where either is false; `Panel#draw` skips children where `shouldDraw()` is false), `boolean mouseDragged(int button, double dragX, double dragY)`, `void mouseReleased(MouseButton)`
+  - `Panel#mouseDragged` / `#mouseReleased` forward to every enabled child (drag stops at the first child returning true); `ScreenWrapper` forwards vanilla drag/release to the `BaseScreen`
+- Artifact/version: `curse.maven:ftb-library-forge-404465:8226927` (ftblibrary 2001.2.13)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. Used from `integration.ftb.client` only.
+
 ## FTB Teams
 
 Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499810` (ftbteams 2001.3.2).
