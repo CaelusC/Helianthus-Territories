@@ -21,25 +21,60 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Lists synced regions with their price and status next to a chunk grid around the player;
- * clicking a region or chunk that is for sale buys it.
+ * clicking a region or chunk that is for sale buys it. Admins can switch the grid to admin mode to
+ * select chunks and create a region from them.
  */
 public final class TerritoryScreen extends BaseScreen {
     private static final int MARGIN = 8;
     private static final int TITLE_HEIGHT = 14;
     private static final int SCROLL_BAR_WIDTH = 8;
     private static final int ROW_HEIGHT = 20;
+    private static final int BUTTON_HEIGHT = 16;
+    private static final int ADMIN_BUTTON_WIDTH = 56;
 
     private final TextField title;
     private final Panel regionList;
     private final PanelScrollBar scrollBar;
-    private final Panel chunkGrid;
+    private final ChunkGridPanel chunkGrid;
+    private final SimpleTextButton adminModeButton;
+    private final SimpleTextButton createRegionButton;
 
     private TerritoryScreen() {
-        setSize(400, 180);
+        setSize(400, 196);
         title = new TextField(this).setText(Component.translatable("territorywar.screen.title"));
         regionList = new RegionListPanel(this);
         scrollBar = new PanelScrollBar(this, regionList);
         chunkGrid = new ChunkGridPanel(this);
+        adminModeButton = new SimpleTextButton(this, adminModeTitle(), Icon.empty()) {
+            @Override
+            public boolean shouldDraw() {
+                return ChunkGridPanel.isAdmin();
+            }
+
+            @Override
+            public void onClicked(MouseButton button) {
+                playClickSound();
+                chunkGrid.toggleAdminMode();
+                setTitle(adminModeTitle());
+            }
+        };
+        createRegionButton = new SimpleTextButton(this, Component.translatable("territorywar.screen.create"), Icon.empty()) {
+            @Override
+            public boolean shouldDraw() {
+                return chunkGrid.isAdminMode() && !chunkGrid.getSelectedChunks().isEmpty();
+            }
+
+            @Override
+            public void onClicked(MouseButton button) {
+                playClickSound();
+                new CreateRegionScreen(chunkGrid.getSelectedChunks(), chunkGrid::clearSelection).openGui();
+            }
+
+            @Override
+            public void addMouseOverText(TooltipList list) {
+                list.add(Component.translatable("territorywar.screen.selected", chunkGrid.getSelectedChunks().size()));
+            }
+        };
     }
 
     public static void open() {
@@ -60,6 +95,8 @@ public final class TerritoryScreen extends BaseScreen {
         add(regionList);
         add(scrollBar);
         add(chunkGrid);
+        add(adminModeButton);
+        add(createRegionButton);
     }
 
     @Override
@@ -73,6 +110,16 @@ public final class TerritoryScreen extends BaseScreen {
         scrollBar.setPosAndSize(gridX - MARGIN - SCROLL_BAR_WIDTH, listTop, SCROLL_BAR_WIDTH, listHeight);
         chunkGrid.setPosAndSize(gridX, listTop, ChunkGridPanel.SIZE, ChunkGridPanel.SIZE);
         chunkGrid.alignWidgets();
+        int buttonY = listTop + ChunkGridPanel.SIZE + MARGIN / 2;
+        adminModeButton.setTitle(adminModeTitle());
+        adminModeButton.setPosAndSize(gridX, buttonY, ADMIN_BUTTON_WIDTH, BUTTON_HEIGHT);
+        createRegionButton.setPosAndSize(gridX + ADMIN_BUTTON_WIDTH + MARGIN / 2, buttonY,
+                ChunkGridPanel.SIZE - ADMIN_BUTTON_WIDTH - MARGIN / 2, BUTTON_HEIGHT);
+    }
+
+    private Component adminModeTitle() {
+        return Component.translatable(chunkGrid.isAdminMode()
+                ? "territorywar.screen.admin.on" : "territorywar.screen.admin.off");
     }
 
     private static final class RegionListPanel extends Panel {
