@@ -133,4 +133,61 @@ class TerritoryServiceTest {
         assertEquals(PurchaseResult.REGION_NOT_FOUND, service.completePurchase(RegionId.random(), UUID.randomUUID()));
         assertFalse(data.isDirty());
     }
+
+    @Test
+    void editRegionChunksAddsAndRemovesChunks() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        ChunkKey a = new ChunkKey(0, 0, OVERWORLD);
+        ChunkKey b = new ChunkKey(1, 0, OVERWORLD);
+        ChunkKey c = new ChunkKey(2, 0, OVERWORLD);
+        RegionId id = service.createRegion("spawn", Set.of(a, b), 100, true, 0x123456);
+        data.setDirty(false);
+
+        assertTrue(service.editRegionChunks(id, Set.of(c), Set.of(a)));
+
+        Region region = service.getRegion(id).orElseThrow();
+        assertEquals(Set.of(b, c), region.getChunks());
+        assertEquals("spawn", region.getName());
+        assertEquals(0x123456, region.getColorRgb());
+        assertTrue(service.getRegionAt(a).isEmpty());
+        assertEquals(Optional.of(id), service.getRegionAt(c));
+        assertTrue(data.isDirty());
+    }
+
+    @Test
+    void editRegionChunksRejectsOverlapWithoutChangingState() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        ChunkKey own = new ChunkKey(0, 0, OVERWORLD);
+        ChunkKey other = new ChunkKey(5, 5, OVERWORLD);
+        RegionId id = service.createRegion("spawn", Set.of(own), 100, true);
+        RegionId otherId = service.createRegion("outpost", Set.of(other), 50, true);
+        data.setDirty(false);
+
+        assertThrows(IllegalArgumentException.class, () -> service.editRegionChunks(id, Set.of(other), Set.of()));
+
+        assertEquals(Set.of(own), service.getRegion(id).orElseThrow().getChunks());
+        assertEquals(Optional.of(otherId), service.getRegionAt(other));
+        assertFalse(data.isDirty());
+    }
+
+    @Test
+    void editRegionChunksRejectsRemovingEveryChunk() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        ChunkKey a = new ChunkKey(0, 0, OVERWORLD);
+        RegionId id = service.createRegion("spawn", Set.of(a), 100, true);
+
+        assertThrows(IllegalArgumentException.class, () -> service.editRegionChunks(id, Set.of(), Set.of(a)));
+
+        assertEquals(Optional.of(id), service.getRegionAt(a));
+    }
+
+    @Test
+    void editRegionChunksOfUnknownRegionReturnsFalse() {
+        TerritoryService service = new TerritoryService(new TerritorySavedData());
+
+        assertFalse(service.editRegionChunks(RegionId.random(), Set.of(new ChunkKey(0, 0, OVERWORLD)), Set.of()));
+    }
 }

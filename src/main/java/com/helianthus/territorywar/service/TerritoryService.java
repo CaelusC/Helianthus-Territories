@@ -5,6 +5,7 @@ import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.data.TerritorySavedData;
 import com.mojang.logging.LogUtils;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -59,6 +60,31 @@ public final class TerritoryService {
         data.removeRegion(regionId);
         LOGGER.info("Region deleted: id={} name={} chunks={}",
                 regionId.value(), region.get().getName(), region.get().getChunks().size());
+        return true;
+    }
+
+    /**
+     * Adds and removes chunks of a stored region; removal wins if a chunk is in both sets. Fails with
+     * {@link IllegalArgumentException}, leaving state unchanged, if an added chunk belongs to another
+     * region or no chunks would be left. Returns {@code false} if the region is not stored.
+     */
+    public boolean editRegionChunks(RegionId regionId, Set<ChunkKey> added, Set<ChunkKey> removed) {
+        Objects.requireNonNull(regionId, "regionId");
+        Objects.requireNonNull(added, "added");
+        Objects.requireNonNull(removed, "removed");
+        Optional<Region> region = data.getRegion(regionId);
+        if (region.isEmpty()) {
+            return false;
+        }
+        Set<ChunkKey> chunks = new HashSet<>(region.get().getChunks());
+        chunks.addAll(added);
+        chunks.removeAll(removed);
+        if (chunks.isEmpty()) {
+            throw new IllegalArgumentException("region " + regionId + " would have no chunks left");
+        }
+        data.setChunks(regionId, chunks);
+        LOGGER.info("Region chunks edited: id={} name={} chunks={} -> {}",
+                regionId.value(), region.get().getName(), region.get().getChunks().size(), chunks.size());
         return true;
     }
 

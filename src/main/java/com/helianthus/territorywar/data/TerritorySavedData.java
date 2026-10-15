@@ -84,6 +84,29 @@ public final class TerritorySavedData extends SavedData {
         return true;
     }
 
+    /**
+     * Replaces the region's chunks and re-indexes them. Rejects the change, leaving storage unchanged,
+     * if any chunk belongs to another region. Returns {@code false} if the region is not stored.
+     */
+    public boolean setChunks(RegionId id, Set<ChunkKey> chunks) {
+        Region region = regions.get(Objects.requireNonNull(id, "id"));
+        if (region == null) {
+            return false;
+        }
+        Region updated = region.withChunks(chunks);
+        for (ChunkKey chunk : updated.getChunks()) {
+            Optional<RegionId> existing = index.getRegion(chunk);
+            if (existing.isPresent() && !existing.get().equals(id)) {
+                throw new IllegalArgumentException("chunk " + chunk + " already belongs to region " + existing.get());
+            }
+        }
+        index.removeRegion(id);
+        index.addRegion(updated);
+        regions.put(id, updated);
+        setDirty();
+        return true;
+    }
+
     /** Assigns the owning team. Returns {@code false} if the region is not stored. */
     public boolean assignOwner(RegionId id, UUID teamId) {
         Region region = regions.get(Objects.requireNonNull(id, "id"));
