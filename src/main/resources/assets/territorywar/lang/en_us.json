@@ -8,5 +8,14 @@
   "territorywar.command.buy.already_owned": "Region %s is already owned by a team",
   "territorywar.command.buy.not_for_sale": "Region %s is not for sale",
   "territorywar.command.buy.not_team_leader": "You must be an officer or owner of an FTB team to buy region %s",
-  "territorywar.command.buy.insufficient_funds": "Region %s costs %s %s but you only have %s"
+  "territorywar.command.buy.insufficient_funds": "Region %s costs %s %s but you only have %s",
+  "territorywar.screen.title": "Territories",
+  "territorywar.screen.empty": "No regions",
+  "territorywar.screen.status.owned": "Owned",
+  "territorywar.screen.status.for_sale": "For sale",
+  "territorywar.screen.status.not_for_sale": "Not for sale",
+  "territorywar.screen.price": "Price: %s %s",
+  "territorywar.screen.chunks": "Chunks: %s",
+  "territorywar.screen.buy.hint": "Click to buy for your team",
+  "territorywar.screen.buy.confirm": "Buy %s for %s %s?"
 }
