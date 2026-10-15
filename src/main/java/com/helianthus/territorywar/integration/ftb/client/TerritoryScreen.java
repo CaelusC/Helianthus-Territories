@@ -19,7 +19,10 @@ import dev.ftb.mods.ftblibrary.util.TooltipList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
-/** Lists synced regions with their price and status; clicking a region that is for sale buys it. */
+/**
+ * Lists synced regions with their price and status next to a chunk grid around the player;
+ * clicking a region or chunk that is for sale buys it.
+ */
 public final class TerritoryScreen extends BaseScreen {
     private static final int MARGIN = 8;
     private static final int TITLE_HEIGHT = 14;
@@ -29,12 +32,14 @@ public final class TerritoryScreen extends BaseScreen {
     private final TextField title;
     private final Panel regionList;
     private final PanelScrollBar scrollBar;
+    private final Panel chunkGrid;
 
     private TerritoryScreen() {
-        setSize(240, 180);
+        setSize(400, 180);
         title = new TextField(this).setText(Component.translatable("territorywar.screen.title"));
         regionList = new RegionListPanel(this);
         scrollBar = new PanelScrollBar(this, regionList);
+        chunkGrid = new ChunkGridPanel(this);
     }
 
     public static void open() {
@@ -54,6 +59,7 @@ public final class TerritoryScreen extends BaseScreen {
         add(title);
         add(regionList);
         add(scrollBar);
+        add(chunkGrid);
     }
 
     @Override
@@ -61,9 +67,12 @@ public final class TerritoryScreen extends BaseScreen {
         title.setPos(MARGIN, MARGIN);
         int listTop = MARGIN + TITLE_HEIGHT;
         int listHeight = height - listTop - MARGIN;
-        regionList.setPosAndSize(MARGIN, listTop, width - MARGIN * 3 - SCROLL_BAR_WIDTH, listHeight);
+        int gridX = width - MARGIN - ChunkGridPanel.SIZE;
+        regionList.setPosAndSize(MARGIN, listTop, gridX - MARGIN * 3 - SCROLL_BAR_WIDTH, listHeight);
         regionList.alignWidgets();
-        scrollBar.setPosAndSize(width - MARGIN - SCROLL_BAR_WIDTH, listTop, SCROLL_BAR_WIDTH, listHeight);
+        scrollBar.setPosAndSize(gridX - MARGIN - SCROLL_BAR_WIDTH, listTop, SCROLL_BAR_WIDTH, listHeight);
+        chunkGrid.setPosAndSize(gridX, listTop, ChunkGridPanel.SIZE, ChunkGridPanel.SIZE);
+        chunkGrid.alignWidgets();
     }
 
     private static final class RegionListPanel extends Panel {
