@@ -37,6 +37,16 @@ Entry format:
 - Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: client only. Used from `integration.ftb.client` only.
 
+### FTB Library UI drawing and input (chunk grid)
+- Signatures:
+  - `Widget`: `Widget(Panel parent)`, `void draw(GuiGraphics, Theme, int x, int y, int w, int h)` (no-op by default), `boolean mousePressed(MouseButton)` (returns false by default), `final boolean isMouseOver()`, `boolean shouldAddMouseOverText()` (`isEnabled() && isMouseOver()`)
+  - `Panel#addMouseOverText(TooltipList)` calls `addMouseOverText` on every child whose `shouldAddMouseOverText()` is true; `Button#mousePressed` only fires `onClicked` when `isMouseOver()`
+  - `Color4I`: `static Color4I rgba(int argb)` (unpacks `0xAARRGGBB`), `Color4I withAlpha(int)`, `void draw(GuiGraphics, int x, int y, int w, int h)`
+  - `Theme` (`dev.ftb.mods.ftblibrary.ui.Theme`) is the second `draw` parameter
+- Artifact/version: `curse.maven:ftb-library-forge-404465:8226927` (ftblibrary 2001.2.13)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. Used from `integration.ftb.client` only.
+
 ## FTB Teams
 
 Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499810` (ftbteams 2001.3.2).
@@ -64,6 +74,18 @@ Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499
 - Class: `dev.ftb.mods.ftbteams.api.TeamManager`
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: UUID-based lookups, usable for offline players. `getPlayerTeamForPlayerID` returns the player's personal (player-type) team, `getTeamForPlayerID` the team they are currently in. Also present: `boolean arePlayersInSameTeam(UUID, UUID)`, `Collection<Team> getTeams()`.
+
+### FTBTeamsAPI.API#isClientManagerLoaded / #getClientManager / ClientTeamManager#getTeamByID
+- Signature: `boolean isClientManagerLoaded()`, `ClientTeamManager getClientManager()`, `Optional<Team> ClientTeamManager#getTeamByID(UUID teamId)`
+- Class: `dev.ftb.mods.ftbteams.api.FTBTeamsAPI$API`, `dev.ftb.mods.ftbteams.api.client.ClientTeamManager`
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. `TeamManagerImpl#syncAllToPlayer` sends every team in a `SyncTeamsMessage`, so the client manager can resolve any team id; still treat the result as possibly empty.
+
+### Team#getProperty / TeamProperties#COLOR
+- Signature: `<T> T getProperty(TeamProperty<T>)`, `static final ColorProperty TeamProperties.COLOR` (`ColorProperty extends TeamProperty<Color4I>`)
+- Class: `dev.ftb.mods.ftbteams.api.Team`, `dev.ftb.mods.ftbteams.api.property.TeamProperties`
+- Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: team colour as an FTB Library `Color4I`.
 
 ### Team (selected methods)
 - Signature: `UUID getId()`, `UUID getTeamId()`, `UUID getOwner()`, `Set<UUID> getMembers()`, `Collection<ServerPlayer> getOnlineMembers()`, `boolean isPlayerTeam()`, `boolean isPartyTeam()`, `boolean isServerTeam()`, `boolean isValid()`, `Component getName()`, `CompoundTag getExtraData()`, `void markDirty()`
