@@ -2,12 +2,16 @@ package com.helianthus.territorywar.network;
 
 import com.helianthus.territorywar.TerritoryWar;
 import com.helianthus.territorywar.command.TerritoryCommand;
+import com.helianthus.territorywar.config.TerritoryConfig;
 import com.helianthus.territorywar.core.ChunkKey;
+import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.data.TerritoryDataService;
 import com.helianthus.territorywar.integration.ftb.ChunkClaimIntegrationService;
 import com.helianthus.territorywar.integration.ftb.TeamIntegrationService;
 import com.helianthus.territorywar.service.PurchaseResult;
+import com.helianthus.territorywar.service.RaidResult;
+import com.helianthus.territorywar.service.RaidService;
 import com.helianthus.territorywar.service.RegionPurchaseService;
 import com.helianthus.territorywar.service.TerritoryManager;
 import com.helianthus.territorywar.service.TerritoryService;
@@ -15,9 +19,11 @@ import com.mojang.logging.LogUtils;
 import dev.architectury.networking.NetworkManager;
 import io.netty.buffer.Unpooled;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,10 +32,10 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.slf4j.Logger;
 
 /**
- * Architectury packets between server and client: {@link #SYNC_REGIONS} and {@link #OPEN_SCREEN}
- * go to the client, {@link #PURCHASE_REGION}, {@link #CREATE_REGION}, {@link #DELETE_REGION} and
- * {@link #EDIT_REGION_CHUNKS} come from it. Client
- * receivers are registered in {@code client.TerritoryClient}.
+ * Architectury packets between server and client: {@link #SYNC_REGIONS}, {@link #OPEN_SCREEN} and
+ * {@link #RAID_INFO} go to the client, {@link #PURCHASE_REGION}, {@link #CREATE_REGION},
+ * {@link #DELETE_REGION}, {@link #EDIT_REGION_CHUNKS}, {@link #REQUEST_RAID_INFO} and {@link #DECLARE_RAID}
+ * come from it. Client receivers are registered in {@code client.TerritoryClient}.
  */
 public final class TerritoryNetwork {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -48,6 +54,13 @@ public final class TerritoryNetwork {
     /** C2S: admin request to add chunks to or remove chunks from a region, see {@link RegionEditCodec.ChunkEdit}. */
     public static final ResourceLocation EDIT_REGION_CHUNKS =
             new ResourceLocation(TerritoryWar.MODID, "edit_region_chunks");
+    /** C2S: region id UUID of an enemy region to show the raid prompt for. */
+    public static final ResourceLocation REQUEST_RAID_INFO =
+            new ResourceLocation(TerritoryWar.MODID, "request_raid_info");
+    /** S2C: what the raid prompt shows, see {@link RaidInfoCodec}. */
+    public static final ResourceLocation RAID_INFO = new ResourceLocation(TerritoryWar.MODID, "raid_info");
+    /** C2S: region id UUID to declare a raid on for the sender's team. */
+    public static final ResourceLocation DECLARE_RAID = new ResourceLocation(TerritoryWar.MODID, "declare_raid");
 
     private TerritoryNetwork() {
     }
@@ -58,6 +71,8 @@ public final class TerritoryNetwork {
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, DELETE_REGION, TerritoryNetwork::onDeleteRegionRequest);
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, EDIT_REGION_CHUNKS,
                 TerritoryNetwork::onEditRegionChunksRequest);
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, REQUEST_RAID_INFO, TerritoryNetwork::onRaidInfoRequest);
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, DECLARE_RAID, TerritoryNetwork::onDeclareRaidRequest);
         MinecraftForge.EVENT_BUS.addListener(TerritoryNetwork::onPlayerLoggedIn);
         LOGGER.info("Registered territory network packets");
     }
@@ -164,6 +179,72 @@ public final class TerritoryNetwork {
                     player.hasPermissions(TerritoryCommand.ADMIN_PERMISSION_LEVEL), edit);
             reportEdit(player, result, edit.id(), "territorywar.map.edit.success");
         });
+    }
+
+    /** Replies with the raid prompt contents if the region is owned by a team other than the sender's. */
+    private static void onRaidInfoRequest(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
+        RegionId id = new RegionId(buf.readUUID());
+        context.queue(() -> {
+            if (!(context.getPlayer() instanceof ServerPlayer player)) {
+                return;
+            }
+            Optional<Region> region = TerritoryManager.get(player.server).getRegion(id);
+            TeamIntegrationService teams = new TeamIntegrationService();
+            Optional<UUID> teamId = teams.getPlayerTeamId(player);
+            if (region.isEmpty() || !region.get().isOwned()
+                    || teamId.map(region.get().getOwnerTeamId()::equals).orElse(false)) {
+                LOGGER.debug("Ignoring raid info request for region {} from {}", id.value(),
+                        player.getGameProfile().getName());
+                return;
+            }
+            RaidInfoCodec.Info info = new RaidInfoCodec.Info(id, RaidResult.price(region.get()),
+                    teamId.map(teams::getOnlineMemberCount).orElse(0), TerritoryConfig.MIN_ATTACKER_ONLINE.get(),
+                    teams.getOnlineMemberCount(region.get().getOwnerTeamId()),
+                    TerritoryConfig.MIN_DEFENDER_ONLINE.get(), TerritoryConfig.RAID_WARMUP_MINUTES.get());
+            FriendlyByteBuf reply = new FriendlyByteBuf(Unpooled.buffer());
+            RaidInfoCodec.write(reply, info);
+            NetworkManager.sendToPlayer(player, RAID_INFO, reply);
+        });
+    }
+
+    private static void onDeclareRaidRequest(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
+        RegionId id = new RegionId(buf.readUUID());
+        context.queue(() -> {
+            if (!(context.getPlayer() instanceof ServerPlayer player)) {
+                return;
+            }
+            TerritoryService territory = TerritoryManager.get(player.server);
+            RaidResult result = RaidService.get().declareRaid(player, id, territory, new TeamIntegrationService(),
+                    TerritoryDataService.get(player.server).getRaidCooldowns());
+            if (result != RaidResult.SUCCESS) {
+                player.sendSystemMessage(raidFailure(result, id, territory.getRegion(id), player)
+                        .withStyle(ChatFormatting.RED));
+            }
+        });
+    }
+
+    /** Chat message explaining why a raid declaration failed. */
+    private static MutableComponent raidFailure(RaidResult result, RegionId id, Optional<Region> region,
+            ServerPlayer player) {
+        String idText = id.value().toString();
+        String name = region.map(Region::getName).orElse(idText);
+        return switch (result) {
+            case REGION_NOT_FOUND -> Component.translatable("territorywar.command.unknown_region", idText);
+            case NOT_OWNED -> Component.translatable("territorywar.raid.not_owned", name);
+            case ALREADY_RAIDED -> Component.translatable("territorywar.raid.already_raided", name);
+            case NOT_TEAM_LEADER -> Component.translatable("territorywar.raid.not_team_leader", name);
+            case OWN_REGION -> Component.translatable("territorywar.raid.own_region", name);
+            case NOT_ENOUGH_ATTACKERS -> Component.translatable("territorywar.raid.not_enough_attackers",
+                    TerritoryConfig.MIN_ATTACKER_ONLINE.get());
+            case NOT_ENOUGH_DEFENDERS -> Component.translatable("territorywar.raid.not_enough_defenders",
+                    TerritoryConfig.MIN_DEFENDER_ONLINE.get());
+            case DEFENDER_ON_COOLDOWN -> Component.translatable("territorywar.raid.defender_on_cooldown", name);
+            case ATTACKER_ON_COOLDOWN -> Component.translatable("territorywar.raid.attacker_on_cooldown");
+            case INSUFFICIENT_FUNDS -> Component.translatable("territorywar.raid.insufficient_funds", name,
+                    region.map(RaidResult::price).orElse(0), RegionPurchaseService.CURRENCY.getDescription(),
+                    player.getInventory().countItem(RegionPurchaseService.CURRENCY));
+            case SUCCESS -> throw new IllegalArgumentException("not a failure: " + result);
+        };
     }
 
     private static void reportEdit(ServerPlayer player, RegionEditHandler.Result result, RegionId id,
