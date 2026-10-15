@@ -20,5 +20,16 @@
   "territorywar.screen.buy.confirm": "Buy %s for %s %s?",
   "territorywar.screen.owner": "Owner: %s",
   "territorywar.screen.no_region": "No region",
-  "territorywar.screen.chunk_pos": "Chunk: %s, %s"
+  "territorywar.screen.chunk_pos": "Chunk: %s, %s",
+  "territorywar.screen.admin.on": "Admin: On",
+  "territorywar.screen.admin.off": "Admin: Off",
+  "territorywar.screen.select.hint": "Click or drag to select",
+  "territorywar.screen.selected": "Selected chunks: %s",
+  "territorywar.screen.create": "Create Region",
+  "territorywar.screen.create.title": "New region (%s chunks)",
+  "territorywar.screen.create.name": "Name",
+  "territorywar.screen.create.price": "Price",
+  "territorywar.screen.create.for_sale.yes": "For sale: Yes",
+  "territorywar.screen.create.for_sale.no": "For sale: No",
+  "territorywar.screen.create.confirm": "Create"
 }

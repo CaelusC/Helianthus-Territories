@@ -2,6 +2,7 @@ package com.helianthus.territorywar.integration.ftb.client;
 
 import com.helianthus.territorywar.client.ClientRegionCache;
 import com.helianthus.territorywar.client.TerritoryClient;
+import com.helianthus.territorywar.command.TerritoryCommand;
 import com.helianthus.territorywar.core.ChunkKey;
 import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.service.PurchaseResult;
@@ -16,8 +17,10 @@ import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.Team;
 import dev.ftb.mods.ftbteams.api.property.TeamProperties;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,7 +28,10 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 
-/** Grid of chunks centred on the player, coloured by the region each chunk belongs to. */
+/**
+ * Grid of chunks centred on the player, coloured by the region each chunk belongs to. In admin mode,
+ * clicking or dragging over chunks without a region selects them for region creation.
+ */
 final class ChunkGridPanel extends Panel {
     static final int RADIUS = 6;
     static final int TILE_SIZE = 11;
@@ -35,10 +41,49 @@ final class ChunkGridPanel extends Panel {
     private static final Color4I OWNED = Color4I.rgba(0x33FF0000);
     private static final Color4I UNCLAIMED = Color4I.rgba(0x33808080);
     private static final Color4I HOVER = Color4I.rgba(0x40FFFFFF);
+    private static final Color4I SELECTED = Color4I.rgba(0x8000FFFF);
     private static final int TEAM_ALPHA = 0x33;
+
+    private final Set<ChunkKey> selectedChunks = new HashSet<>();
+    private boolean adminMode;
+    private boolean dragging;
+    private boolean dragSelects;
 
     ChunkGridPanel(Panel parent) {
         super(parent);
+    }
+
+    static boolean isAdmin() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && player.hasPermissions(TerritoryCommand.ADMIN_PERMISSION_LEVEL);
+    }
+
+    boolean isAdminMode() {
+        return adminMode;
+    }
+
+    void toggleAdminMode() {
+        adminMode = !adminMode && isAdmin();
+        if (!adminMode) {
+            selectedChunks.clear();
+        }
+    }
+
+    /** Copy of the chunks selected in admin mode. */
+    Set<ChunkKey> getSelectedChunks() {
+        return Set.copyOf(selectedChunks);
+    }
+
+    void clearSelection() {
+        selectedChunks.clear();
+    }
+
+    private void applyDrag(ChunkKey chunk) {
+        if (dragSelects) {
+            selectedChunks.add(chunk);
+        } else {
+            selectedChunks.remove(chunk);
+        }
     }
 
     @Override
@@ -54,6 +99,11 @@ final class ChunkGridPanel extends Panel {
                 regionsByChunk.put(chunk, region);
             }
         }
+        if (!isAdmin()) {
+            adminMode = false;
+            selectedChunks.clear();
+        }
+        selectedChunks.removeIf(regionsByChunk::containsKey);
         ChunkPos center = player.chunkPosition();
         for (int dz = -RADIUS; dz <= RADIUS; dz++) {
             for (int dx = -RADIUS; dx <= RADIUS; dx++) {
@@ -72,6 +122,12 @@ final class ChunkGridPanel extends Panel {
         }
     }
 
+    @Override
+    public void mouseReleased(MouseButton button) {
+        dragging = false;
+        super.mouseReleased(button);
+    }
+
     private static Optional<Team> ownerTeam(Region region) {
         if (!region.isOwned() || !FTBTeamsAPI.api().isClientManagerLoaded()) {
             return Optional.empty();
@@ -80,14 +136,16 @@ final class ChunkGridPanel extends Panel {
     }
 
     private static final class ChunkTile extends Widget {
+        private final ChunkGridPanel grid;
         private final ChunkKey chunk;
         private final Region region;
         private final int column;
         private final int row;
         private final Color4I color;
 
-        ChunkTile(Panel parent, ChunkKey chunk, Region region, int column, int row) {
-            super(parent);
+        ChunkTile(ChunkGridPanel grid, ChunkKey chunk, Region region, int column, int row) {
+            super(grid);
+            this.grid = grid;
             this.chunk = chunk;
             this.region = region;
             this.column = column;
@@ -111,9 +169,16 @@ final class ChunkGridPanel extends Panel {
             return region != null && !region.isOwned() && region.isForSale();
         }
 
+        private boolean isSelectable() {
+            return grid.adminMode && region == null;
+        }
+
         @Override
         public void draw(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
             color.draw(graphics, x, y, w - 1, h - 1);
+            if (grid.selectedChunks.contains(chunk)) {
+                SELECTED.draw(graphics, x, y, w - 1, h - 1);
+            }
             if (isMouseOver()) {
                 HOVER.draw(graphics, x, y, w - 1, h - 1);
             }
@@ -121,13 +186,35 @@ final class ChunkGridPanel extends Panel {
 
         @Override
         public boolean mousePressed(MouseButton button) {
-            if (!isMouseOver() || !button.isLeft() || !isBuyable()) {
+            if (!isMouseOver() || !button.isLeft()) {
+                return false;
+            }
+            if (grid.adminMode) {
+                if (!isSelectable()) {
+                    return false;
+                }
+                playClickSound();
+                grid.dragging = true;
+                grid.dragSelects = !grid.selectedChunks.contains(chunk);
+                grid.applyDrag(chunk);
+                return true;
+            }
+            if (!isBuyable()) {
                 return false;
             }
             playClickSound();
             getGui().openYesNo(Component.literal(region.getName()), Component.translatable("territorywar.screen.buy.confirm",
                     region.getName(), PurchaseResult.price(region), RegionPurchaseService.CURRENCY.getDescription()),
                     () -> TerritoryClient.requestPurchase(region.getId()));
+            return true;
+        }
+
+        @Override
+        public boolean mouseDragged(int button, double dragX, double dragY) {
+            if (!grid.dragging || !isMouseOver() || !isSelectable()) {
+                return false;
+            }
+            grid.applyDrag(chunk);
             return true;
         }
 
@@ -143,7 +230,9 @@ final class ChunkGridPanel extends Panel {
                 list.add(Component.translatable("territorywar.screen.chunks", region.getChunks().size()));
             }
             list.add(Component.translatable("territorywar.screen.chunk_pos", chunk.chunkX(), chunk.chunkZ()));
-            if (isBuyable()) {
+            if (isSelectable()) {
+                list.add(Component.translatable("territorywar.screen.select.hint"));
+            } else if (!grid.adminMode && isBuyable()) {
                 list.add(Component.translatable("territorywar.screen.buy.hint"));
             }
         }
