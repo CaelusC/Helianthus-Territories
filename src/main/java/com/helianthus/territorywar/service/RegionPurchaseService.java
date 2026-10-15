@@ -38,37 +38,30 @@ public final class RegionPurchaseService {
     }
 
     /**
-     * Buys the region for the player's team. Returns {@code false}, taking no payment, if the
+     * Buys the region for the player's team. Returns why it failed, taking no payment, if the
      * region is unknown, owned or not for sale, the player does not lead a team, or they cannot
      * pay. A failed claim allowance update is logged but does not undo the purchase.
      */
-    public boolean purchaseRegion(ServerPlayer player, RegionId regionId) {
+    public PurchaseResult purchaseRegion(ServerPlayer player, RegionId regionId) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(regionId, "regionId");
         String buyer = player.getGameProfile().getName();
 
         Optional<Region> found = territory.getRegion(regionId);
-        if (found.isEmpty() || found.get().isOwned() || !found.get().isForSale()) {
-            LOGGER.debug("Purchase of region {} by {} rejected: not available", regionId.value(), buyer);
-            return false;
+        Optional<UUID> teamId = teams.getPlayerTeamId(player);
+        boolean teamLeader = teamId.isPresent() && teams.isTeamLeader(player, teamId.get());
+        Inventory inventory = player.getInventory();
+        PurchaseResult check = PurchaseResult.check(found, teamLeader, inventory.countItem(CURRENCY));
+        if (check != PurchaseResult.SUCCESS) {
+            LOGGER.debug("Purchase of region {} by {} rejected: {}", regionId.value(), buyer, check);
+            return check;
         }
         Region region = found.get();
+        int price = PurchaseResult.price(region);
 
-        Optional<UUID> teamId = teams.getPlayerTeamId(player);
-        if (teamId.isEmpty() || !teams.isTeamLeader(player, teamId.get())) {
-            LOGGER.debug("Purchase of region {} by {} rejected: not a team leader", regionId.value(), buyer);
-            return false;
-        }
-
-        int price = Math.max(0, region.getPurchasePrice());
-        Inventory inventory = player.getInventory();
-        if (inventory.countItem(CURRENCY) < price) {
-            LOGGER.debug("Purchase of region {} by {} rejected: cannot pay {}", regionId.value(), buyer, price);
-            return false;
-        }
-
-        if (!territory.completePurchase(regionId, teamId.get())) {
-            return false;
+        PurchaseResult completed = territory.completePurchase(regionId, teamId.get());
+        if (completed != PurchaseResult.SUCCESS) {
+            return completed;
         }
         if (price > 0) {
             ContainerHelper.clearOrCountMatchingItems(inventory, stack -> stack.is(CURRENCY), price, false);
@@ -82,6 +75,6 @@ public final class RegionPurchaseService {
         }
         LOGGER.info("Region purchased: id={} name={} team={} buyer={} paid={} chunks={}",
                 regionId.value(), region.getName(), teamId.get(), buyer, price, chunkCount);
-        return true;
+        return PurchaseResult.SUCCESS;
     }
 }

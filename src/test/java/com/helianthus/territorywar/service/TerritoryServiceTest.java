@@ -87,7 +87,7 @@ class TerritoryServiceTest {
         data.setDirty(false);
         UUID team = UUID.randomUUID();
 
-        assertTrue(service.completePurchase(id, team));
+        assertEquals(PurchaseResult.SUCCESS, service.completePurchase(id, team));
 
         Region region = service.getRegion(id).orElseThrow();
         assertEquals(team, region.getOwnerTeamId());
@@ -102,7 +102,7 @@ class TerritoryServiceTest {
         RegionId id = service.createRegion("spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), 100, false);
         data.setDirty(false);
 
-        assertFalse(service.completePurchase(id, UUID.randomUUID()));
+        assertEquals(PurchaseResult.NOT_FOR_SALE, service.completePurchase(id, UUID.randomUUID()));
 
         assertFalse(service.getRegion(id).orElseThrow().isOwned());
         assertFalse(data.isDirty());
@@ -117,7 +117,7 @@ class TerritoryServiceTest {
         data.assignOwner(id, owner);
         data.setDirty(false);
 
-        assertFalse(service.completePurchase(id, UUID.randomUUID()));
+        assertEquals(PurchaseResult.ALREADY_OWNED, service.completePurchase(id, UUID.randomUUID()));
 
         Region region = service.getRegion(id).orElseThrow();
         assertEquals(owner, region.getOwnerTeamId());
@@ -126,11 +126,11 @@ class TerritoryServiceTest {
     }
 
     @Test
-    void completePurchaseOfUnknownRegionReturnsFalse() {
+    void completePurchaseOfUnknownRegionReturnsRegionNotFound() {
         TerritorySavedData data = new TerritorySavedData();
         TerritoryService service = new TerritoryService(data);
 
-        assertFalse(service.completePurchase(RegionId.random(), UUID.randomUUID()));
+        assertEquals(PurchaseResult.REGION_NOT_FOUND, service.completePurchase(RegionId.random(), UUID.randomUUID()));
         assertFalse(data.isDirty());
     }
 }
