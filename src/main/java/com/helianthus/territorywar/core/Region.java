@@ -85,6 +85,11 @@ public final class Region {
         return new Region(id, name, chunks, null, purchasePrice, forSale, colorRgb);
     }
 
+    /** Copy of this region made of the given chunks. */
+    public Region withChunks(Set<ChunkKey> chunks) {
+        return new Region(id, name, chunks, ownerTeamId, purchasePrice, forSale, colorRgb);
+    }
+
     /** Copy of this region with the given for-sale flag. */
     public Region withForSale(boolean forSale) {
         return new Region(id, name, chunks, ownerTeamId, purchasePrice, forSale, colorRgb);

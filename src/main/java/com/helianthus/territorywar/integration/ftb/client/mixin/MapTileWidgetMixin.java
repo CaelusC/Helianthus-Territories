@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Draws territory region and selection fills over each large map tile, beneath map icons. */
+/** Draws territory region fills, borders and selections over each large map tile, beneath map icons. */
 @Mixin(value = MapTileWidget.class, remap = false)
 public abstract class MapTileWidgetMixin {
     @Shadow

@@ -25,9 +25,16 @@ class TopographicColorResolverTest {
     }
 
     @Test
-    void landIsSteppedIntoContourBands() {
-        assertEquals(TopographicColorResolver.landColor(96), TopographicColorResolver.landColor(103));
-        assertTrue(TopographicColorResolver.landColor(103) != TopographicColorResolver.landColor(104));
+    void landIsSteppedIntoFourBlockContourBands() {
+        assertEquals(TopographicColorResolver.landColor(96), TopographicColorResolver.landColor(99));
+        assertTrue(TopographicColorResolver.landColor(99) != TopographicColorResolver.landColor(100));
+        assertTrue(TopographicColorResolver.landColor(100) != TopographicColorResolver.landColor(104));
+    }
+
+    @Test
+    void waterUsesDarkBrownDepthShades() {
+        assertEquals(0x1F1610, TopographicColorResolver.SHALLOW_WATER);
+        assertEquals(0x0C0805, TopographicColorResolver.DEEP_WATER);
     }
 
     @Test

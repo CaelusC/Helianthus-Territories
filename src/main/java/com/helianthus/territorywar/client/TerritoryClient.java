@@ -4,6 +4,7 @@ import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.integration.ftb.client.TerritoryScreen;
 import com.helianthus.territorywar.network.CreateRegionCodec;
+import com.helianthus.territorywar.network.RegionEditCodec;
 import com.helianthus.territorywar.network.RegionSyncCodec;
 import com.helianthus.territorywar.network.TerritoryNetwork;
 import com.mojang.logging.LogUtils;
@@ -42,6 +43,20 @@ public final class TerritoryClient {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         CreateRegionCodec.write(buf, request);
         NetworkManager.sendToServer(TerritoryNetwork.CREATE_REGION, buf);
+    }
+
+    /** Asks the server to delete a region. */
+    public static void requestDeleteRegion(RegionId id) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RegionEditCodec.writeDelete(buf, id);
+        NetworkManager.sendToServer(TerritoryNetwork.DELETE_REGION, buf);
+    }
+
+    /** Asks the server to add chunks to or remove chunks from a region. */
+    public static void requestEditRegionChunks(RegionEditCodec.ChunkEdit edit) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RegionEditCodec.writeChunkEdit(buf, edit);
+        NetworkManager.sendToServer(TerritoryNetwork.EDIT_REGION_CHUNKS, buf);
     }
 
     private static void onSyncRegions(FriendlyByteBuf buf, NetworkManager.PacketContext context) {

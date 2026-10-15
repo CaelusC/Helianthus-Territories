@@ -70,6 +70,16 @@ Entry format:
 - Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: client only. Used from `integration.ftb.client` only.
 
+### FTB Library UI confirm dialog, widget list and keys (map admin tools)
+- Signatures:
+  - `BaseScreen#openYesNo(Component title, Component desc, Runnable onYes)` delegates to `openYesNoFull`, which reopens the calling screen (`openGui`), runs the callback on yes and then calls `refreshWidgets()`
+  - `Panel#getWidgets()` returns the panel's own mutable `ArrayList` (`protected final List<Widget> widgets`); `refreshWidgets()` runs `clearWidgets()`, `addWidgets()`, sorts the list, then `alignWidgets()`
+  - `Key` (`dev.ftb.mods.ftblibrary.ui.input`): `public final int keyCode`, `boolean is(int)`
+  - `Widget#setPos(int, int)` is `final`; `posX` / `posY` are public fields
+- Artifact/version: `curse.maven:ftb-library-forge-404465:8226927` (ftblibrary 2001.2.13)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. Used from `integration.ftb.client` only.
+
 ## FTB Teams
 
 Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499810` (ftbteams 2001.3.2).
@@ -228,6 +238,15 @@ Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:821
   - `MapRegion` (`dev.ftb.mods.ftbchunks.client.map`): `public final MapDimension dimension`, `public final XZ pos` (region coordinates, block >> 9, i.e. 32x32 chunks); `MapDimension#dimension` is `public final ResourceKey<Level>`; `XZ#x()` / `#z()` (`dev.ftb.mods.ftblibrary.math`)
 - Verified: `javap -c -p -l` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: internal classes, client only. Hooked only from `integration.ftb.client.mixin` with `remap = false`. Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump. A create region request sent from the map must stay under vanilla's 32767 byte `ServerboundCustomPayloadPacket` limit (constant checked in the Forge 1.20.1 jar).
+
+### Map icons and large map buttons (internal, mixin targets)
+- Signatures:
+  - `MapIconEvent#add(MapIcon)` (`public void`, `dev.ftb.mods.ftbchunks.api.client.event`): only appends to the event's icon list. `FTBChunksClient#mapIcons(MapIconEvent)` feeds both `MapIconEvent.MINIMAP` and `MapIconEvent.LARGE_MAP` through it: waypoints (`Waypoint#getMapIcon`), mobs and other entities as `EntityMapIcon`, other players as `EntityMapIcon` or `TrackedPlayerMapIcon` (long range tracking), the local player as `EntityMapIcon` on the large map and `PointerIcon` on the minimap
+  - `EntityMapIcon`, `TrackedPlayerMapIcon` (`dev.ftb.mods.ftbchunks.client.mapicon`, both `implements MapIcon`)
+  - `LargeMapScreen` private `Button` fields: `claimChunksButton`, `waypointManagerButton`, `infoButton`, `infoSortScreen`, `clearDeathpointsButton`, `dimensionButton`, `settingsButton`, `serverSettingsButton` (only created when the player has permission level 2, otherwise null). `addWidgets()` adds each of them; `alignWidgets()` stacks the left column at x 1, y 1 / 19 / 37 / 55 / 73 (16x16) and calls `setPosAndSize` on every field including the server settings button when non-null
+  - `LargeMapScreen#keyPressed(Key)` (`public boolean`): calls `BaseScreen#keyPressed` first, then handles space (centre on player), T (teleport), G (chunk grid), C (`claimChunksButton.onClicked`), S (`settingsButton`, or `serverSettingsButton` with Ctrl) and the waypoint / open map keybinds
+- Verified: `javap -c -p` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: internal classes, client only. Hooked only from `integration.ftb.client.mixin` with `remap = false`. Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump.
 
 ## Architectury
 
