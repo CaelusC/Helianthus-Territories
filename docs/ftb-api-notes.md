@@ -198,6 +198,16 @@ Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:821
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: pushes claim/force-load limits to clients. FTB's `/ftbchunks extra_claim_chunks` flow (from `javap -c` of `FTBChunksCommands#setExtraClaimChunks`): `getPersonalData(uuid).setExtraClaimChunks(n)`, `.markDirty()`, `getOrCreateData(player).updateLimits()`, `SendGeneralDataPacket.send(thatData, player)`.
 
+### Client map rendering (internal, mixin targets)
+- Signatures:
+  - `RenderMapImageTask#runMapTask()` (`public void`): the only producer of region map images, shared by the large map and the minimap. Reads `FTBChunksClientConfig.MAP_MODE` into its single `MapMode` local (`mapMode`, slot 16; LVT present). In `MapMode.TOPOGRAPHY` the base pixel colour is `ColorUtils.getTopographyPalette()[getHeight(...) + (water ? 256 : 0)]`, then saturation, relief shadows, grid and claim fill tint are applied. Claim border pixels are only drawn on the non-topography path. Unexplored chunks are written as transparent.
+  - `RenderMapImageTask#getHeight(MapMode, int waterHeightFactor, short waterLightAndBiome, short height)` (`private static int`): returns the raw stored height in `TOPOGRAPHY`; nothing clamps it before the palette lookup.
+  - `ColorUtils#getTopographyPalette()` (`public static Color4I[]`, `dev.ftb.mods.ftbchunks.client.map.color`): lazily loads `ftbchunks:textures/topography_palette.png`, indexed `x + y * width`.
+  - `FTBChunksClient#skipBlock(BlockState)` (`public boolean`): true when the block's FTB colour is ignored. Only caller is `HeightUtils#skipBlock(Level, BlockState)`, which returns false on the server side.
+  - `HeightUtils#getHeight(Level, ChunkAccess, BlockPos.MutableBlockPos)` (`dev.ftb.mods.ftbchunks.util`): called by `ChunkUpdateTask` starting 2 above the `MOTION_BLOCKING` heightmap; scans down, records the first water block and stops at the first non-water block that `skipBlock` rejects. `ChunkUpdateTask` stores that floor Y in `MapRegionData#height` and sets bit 15 of `waterLightAndBiome` when water was found. Dimensions with a ceiling start below the roof (FTB's cave view); overworld always scans from the surface.
+- Verified: `javap -c -p -l` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: internal classes, client only. Hooked only from `integration.ftb.client.mixin` with `remap = false` (FTB names are not obfuscated). Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump.
+
 ## Architectury
 
 Artifact/version for every entry below: `curse.maven:architectury-api-419699:5137938` (architectury 9.2.14).

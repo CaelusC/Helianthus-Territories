@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.helianthus.territorywar.integration.ftb.client.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ColorUtilsMixin",
+    "FTBChunksClientMixin",
+    "RenderMapImageTaskMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
