@@ -42,9 +42,11 @@ public final class TerritorySavedData extends SavedData {
     private static final String TAG_CHUNK_X = "x";
     private static final String TAG_CHUNK_Z = "z";
     private static final String TAG_DIMENSION = "dimension";
+    private static final String TAG_RAID_COOLDOWNS = "raidCooldowns";
 
     private final Map<RegionId, Region> regions = new LinkedHashMap<>();
     private final RegionIndex index = new RegionIndex();
+    private final RaidCooldownTracker raidCooldowns = new RaidCooldownTracker(this::setDirty);
 
     public Optional<Region> getRegion(RegionId id) {
         return Optional.ofNullable(regions.get(Objects.requireNonNull(id, "id")));
@@ -57,6 +59,11 @@ public final class TerritorySavedData extends SavedData {
 
     public RegionIndex getIndex() {
         return index;
+    }
+
+    /** Per team raid cooldowns; changes mark this data dirty. */
+    public RaidCooldownTracker getRaidCooldowns() {
+        return raidCooldowns;
     }
 
     /**
@@ -149,6 +156,7 @@ public final class TerritorySavedData extends SavedData {
             regionList.add(writeRegion(region));
         }
         tag.put(TAG_REGIONS, regionList);
+        tag.put(TAG_RAID_COOLDOWNS, raidCooldowns.save());
         return tag;
     }
 
@@ -179,6 +187,7 @@ public final class TerritorySavedData extends SavedData {
         if (expectedCount != data.regions.size()) {
             LOGGER.warn("Territory data declared {} regions but {} were loaded", expectedCount, data.regions.size());
         }
+        data.raidCooldowns.load(tag.getList(TAG_RAID_COOLDOWNS, Tag.TAG_COMPOUND));
         return data;
     }
 

@@ -139,4 +139,65 @@ class TerritorySavedDataTest {
         assertFalse(data.setForSale(missing, false));
         assertFalse(data.isDirty());
     }
+
+    @Test
+    void raidCooldownsRoundTripThroughNbt() {
+        UUID victim = UUID.randomUUID();
+        UUID raider = UUID.randomUUID();
+        UUID both = UUID.randomUUID();
+        TerritorySavedData original = new TerritorySavedData();
+        original.getRaidCooldowns().setVictimCooldownUntil(victim, 1_700_000_000_000L);
+        original.getRaidCooldowns().setRaiderCooldownUntil(raider, 1_800_000_000_000L);
+        original.getRaidCooldowns().setVictimCooldownUntil(both, 123L);
+        original.getRaidCooldowns().setRaiderCooldownUntil(both, 456L);
+
+        TerritorySavedData loaded = TerritorySavedData.load(original.save(new CompoundTag()));
+
+        RaidCooldownTracker cooldowns = loaded.getRaidCooldowns();
+        assertEquals(1_700_000_000_000L, cooldowns.getVictimCooldownUntil(victim));
+        assertEquals(0, cooldowns.getRaiderCooldownUntil(victim));
+        assertEquals(0, cooldowns.getVictimCooldownUntil(raider));
+        assertEquals(1_800_000_000_000L, cooldowns.getRaiderCooldownUntil(raider));
+        assertEquals(123L, cooldowns.getVictimCooldownUntil(both));
+        assertEquals(456L, cooldowns.getRaiderCooldownUntil(both));
+        assertEquals(0, cooldowns.getVictimCooldownUntil(UUID.randomUUID()));
+        assertFalse(loaded.isDirty());
+    }
+
+    @Test
+    void dataSavedWithoutRaidCooldownsLoadsNone() {
+        UUID team = UUID.randomUUID();
+        TerritorySavedData original = new TerritorySavedData();
+        original.getRaidCooldowns().setVictimCooldownUntil(team, 1_000L);
+        CompoundTag tag = original.save(new CompoundTag());
+        tag.remove("raidCooldowns");
+
+        TerritorySavedData loaded = TerritorySavedData.load(tag);
+
+        assertEquals(0, loaded.getRaidCooldowns().getVictimCooldownUntil(team));
+    }
+
+    @Test
+    void clearedRaidCooldownsAreNotSaved() {
+        UUID team = UUID.randomUUID();
+        TerritorySavedData data = new TerritorySavedData();
+        data.getRaidCooldowns().setVictimCooldownUntil(team, 1_000L);
+        data.getRaidCooldowns().setVictimCooldownUntil(team, 0);
+
+        CompoundTag tag = data.save(new CompoundTag());
+
+        assertEquals(0, tag.getList("raidCooldowns", Tag.TAG_COMPOUND).size());
+    }
+
+    @Test
+    void raidCooldownChangesMarkDataDirty() {
+        TerritorySavedData data = new TerritorySavedData();
+
+        data.getRaidCooldowns().setVictimCooldownUntil(UUID.randomUUID(), 1_000L);
+        assertTrue(data.isDirty());
+
+        data.setDirty(false);
+        data.getRaidCooldowns().setRaiderCooldownUntil(UUID.randomUUID(), 1_000L);
+        assertTrue(data.isDirty());
+    }
 }
