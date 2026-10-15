@@ -30,9 +30,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 /**
  * Territory tools on the FTB Chunks large map, driven by the {@code mixin} hooks. Fills region chunks
@@ -40,7 +43,8 @@ import net.minecraft.network.chat.Component;
  * region and labels it with its name and owner. In admin mode, dragging paints free chunks for a new
  * region or for the focused region, clicking a region focuses it, and the erase tool marks chunks of the
  * focused region for removal; otherwise clicking an unowned region that is for sale opens
- * {@link PurchaseRegionScreen}.
+ * {@link PurchaseRegionScreen}. Overlays, labels, buttons and clicks only apply while the player is in
+ * the overworld and the map shows the overworld.
  */
 public final class LargeMapRegionTools {
     private static final int REGION_ALPHA = 0x66;
@@ -130,7 +134,7 @@ public final class LargeMapRegionTools {
 
     /** Returns true if the press is handled by an admin tool and must not pan the map. */
     public static boolean onMapPressed(RegionMapPanel panel, MouseButton button) {
-        if (!button.isLeft() || !panel.isMouseOver()) {
+        if (!button.isLeft() || !panel.isMouseOver() || !isOverworld(mapDimension(panel))) {
             return false;
         }
         ChunkKey chunk = chunkUnderMouse(panel);
@@ -154,7 +158,7 @@ public final class LargeMapRegionTools {
     /** Paints under the mouse while held, then draws region labels over the map and its icons. */
     public static void onMapDrawn(RegionMapPanel panel, GuiGraphics graphics) {
         if (painting) {
-            if (isAdminMode()) {
+            if (isAdminMode() && isOverworld(mapDimension(panel))) {
                 paint(chunkUnderMouse(panel));
             } else {
                 painting = false;
@@ -162,7 +166,7 @@ public final class LargeMapRegionTools {
         }
         if (tileDrawn) {
             tileDrawn = false;
-            drawLabels(graphics, ((LargeMapScreen) panel.getGui()).currentDimension().location().toString());
+            drawLabels(graphics, mapDimension(panel).location().toString());
         }
     }
 
@@ -174,7 +178,7 @@ public final class LargeMapRegionTools {
         }
         ChunkKey chunk = pressedChunk;
         pressedChunk = null;
-        if (chunk == null || !button.isLeft()
+        if (chunk == null || !button.isLeft() || !isOverworld(mapDimension(panel))
                 || Math.abs(panel.getMouseX() - pressedMouseX) > CLICK_TOLERANCE
                 || Math.abs(panel.getMouseY() - pressedMouseY) > CLICK_TOLERANCE) {
             return;
@@ -185,6 +189,9 @@ public final class LargeMapRegionTools {
 
     /** Fills and outlines the region and selected chunks inside one 512x512 block map tile drawn at x, y, w, h. */
     public static void drawTileOverlay(GuiGraphics graphics, MapRegion tile, int x, int y, int w, int h) {
+        if (!isOverworld(tile.dimension.dimension)) {
+            return;
+        }
         String dimension = tile.dimension.dimension.location().toString();
         int tileX = tile.pos.x();
         int tileZ = tile.pos.z();
@@ -212,7 +219,7 @@ public final class LargeMapRegionTools {
         return new SimpleTextButton(screen, titleSupplier.get(), Icon.empty()) {
             @Override
             public boolean shouldDraw() {
-                return visible.getAsBoolean();
+                return isOverworld(((LargeMapScreen) screen).currentDimension()) && visible.getAsBoolean();
             }
 
             @Override
@@ -245,8 +252,17 @@ public final class LargeMapRegionTools {
 
     private static ChunkKey chunkUnderMouse(RegionMapPanel panel) {
         BlockPos pos = panel.blockPos();
-        String dimension = ((LargeMapScreen) panel.getGui()).currentDimension().location().toString();
-        return new ChunkKey(pos.getX() >> 4, pos.getZ() >> 4, dimension);
+        return new ChunkKey(pos.getX() >> 4, pos.getZ() >> 4, mapDimension(panel).location().toString());
+    }
+
+    private static ResourceKey<Level> mapDimension(RegionMapPanel panel) {
+        return ((LargeMapScreen) panel.getGui()).currentDimension();
+    }
+
+    /** True if both the player's level and the dimension shown on the map are the overworld. */
+    private static boolean isOverworld(ResourceKey<Level> mapDimension) {
+        ClientLevel level = Minecraft.getInstance().level;
+        return level != null && level.dimension() == Level.OVERWORLD && mapDimension == Level.OVERWORLD;
     }
 
     /** Paint adds free chunks to the selection; erase removes painted chunks or marks focused region chunks. */
