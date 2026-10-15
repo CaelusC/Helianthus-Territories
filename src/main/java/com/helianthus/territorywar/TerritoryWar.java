@@ -5,6 +5,7 @@ import com.helianthus.territorywar.command.TerritoryCommand;
 import com.helianthus.territorywar.config.TerritoryConfig;
 import com.helianthus.territorywar.integration.ftb.ClaimEventSubscriber;
 import com.helianthus.territorywar.network.TerritoryNetwork;
+import com.helianthus.territorywar.service.RaidService;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -26,6 +27,7 @@ public class TerritoryWar
     {
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, TerritoryConfig.SPEC);
         MinecraftForge.EVENT_BUS.addListener(TerritoryCommand::onRegisterCommands);
+        RaidService.register();
 
         if (ModList.get().isLoaded("ftbchunks"))
         {
