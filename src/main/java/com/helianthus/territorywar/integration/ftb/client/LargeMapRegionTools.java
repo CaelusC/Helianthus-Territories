@@ -43,7 +43,8 @@ import net.minecraft.world.level.Level;
  * region and labels it with its name and owner. In admin mode, dragging paints free chunks for a new
  * region or for the focused region, clicking a region focuses it, and the erase tool marks chunks of the
  * focused region for removal; otherwise clicking an unowned region that is for sale opens
- * {@link PurchaseRegionScreen}. Overlays, labels, buttons and clicks only apply while the player is in
+ * {@link PurchaseRegionScreen} and clicking a region owned by another team asks the server for the
+ * {@link RaidRegionScreen} prompt. Overlays, labels, buttons and clicks only apply while the player is in
  * the overworld and the map shows the overworld.
  */
 public final class LargeMapRegionTools {
@@ -170,7 +171,7 @@ public final class LargeMapRegionTools {
         }
     }
 
-    /** Ends painting, or opens the purchase dialog if a press was a click on a region. */
+    /** Ends painting, or opens the purchase dialog or requests the raid prompt if a press was a click on a region. */
     public static void onMapReleased(RegionMapPanel panel, MouseButton button) {
         if (painting) {
             painting = false;
@@ -183,8 +184,13 @@ public final class LargeMapRegionTools {
                 || Math.abs(panel.getMouseY() - pressedMouseY) > CLICK_TOLERANCE) {
             return;
         }
-        regionAt(chunk).filter(region -> !region.isOwned() && region.isForSale())
-                .ifPresent(region -> new PurchaseRegionScreen(region).openGui());
+        regionAt(chunk).ifPresent(region -> {
+            if (region.isOwned()) {
+                TerritoryClient.requestRaidInfo(region.getId());
+            } else if (region.isForSale()) {
+                new PurchaseRegionScreen(region).openGui();
+            }
+        });
     }
 
     /** Fills and outlines the region and selected chunks inside one 512x512 block map tile drawn at x, y, w, h. */

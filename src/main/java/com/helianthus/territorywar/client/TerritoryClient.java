@@ -2,8 +2,10 @@ package com.helianthus.territorywar.client;
 
 import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
+import com.helianthus.territorywar.integration.ftb.client.RaidRegionScreen;
 import com.helianthus.territorywar.integration.ftb.client.TerritoryScreen;
 import com.helianthus.territorywar.network.CreateRegionCodec;
+import com.helianthus.territorywar.network.RaidInfoCodec;
 import com.helianthus.territorywar.network.RegionEditCodec;
 import com.helianthus.territorywar.network.RegionSyncCodec;
 import com.helianthus.territorywar.network.TerritoryNetwork;
@@ -27,6 +29,7 @@ public final class TerritoryClient {
     public static void init() {
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, TerritoryNetwork.SYNC_REGIONS, TerritoryClient::onSyncRegions);
         NetworkManager.registerReceiver(NetworkManager.Side.S2C, TerritoryNetwork.OPEN_SCREEN, TerritoryClient::onOpenScreen);
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, TerritoryNetwork.RAID_INFO, TerritoryClient::onRaidInfo);
         MinecraftForge.EVENT_BUS.addListener(TerritoryClient::onLoggingOut);
         LOGGER.info("Registered territory client packet receivers");
     }
@@ -59,6 +62,20 @@ public final class TerritoryClient {
         NetworkManager.sendToServer(TerritoryNetwork.EDIT_REGION_CHUNKS, buf);
     }
 
+    /** Asks the server for the raid prompt contents of an enemy region. */
+    public static void requestRaidInfo(RegionId id) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeUUID(id.value());
+        NetworkManager.sendToServer(TerritoryNetwork.REQUEST_RAID_INFO, buf);
+    }
+
+    /** Asks the server to declare a raid on the region for the player's team. */
+    public static void requestDeclareRaid(RegionId id) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeUUID(id.value());
+        NetworkManager.sendToServer(TerritoryNetwork.DECLARE_RAID, buf);
+    }
+
     private static void onSyncRegions(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
         List<Region> regions = RegionSyncCodec.read(buf);
         context.queue(() -> {
@@ -76,6 +93,15 @@ public final class TerritoryClient {
                 TerritoryScreen.open();
             } else {
                 LOGGER.warn("Cannot open territory screen: FTB Library is not loaded");
+            }
+        });
+    }
+
+    private static void onRaidInfo(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
+        RaidInfoCodec.Info info = RaidInfoCodec.read(buf);
+        context.queue(() -> {
+            if (isScreenAvailable()) {
+                RaidRegionScreen.open(info);
             }
         });
     }

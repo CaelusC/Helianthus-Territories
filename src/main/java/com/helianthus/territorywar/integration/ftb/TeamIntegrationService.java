@@ -4,6 +4,7 @@ import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.Team;
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 
@@ -31,6 +32,22 @@ public final class TeamIntegrationService {
         return Ftb.isTeamLeader(player, teamId);
     }
 
+    /** Returns how many members of the team are online, or 0 if the team is unknown. */
+    public int getOnlineMemberCount(UUID teamId) {
+        if (!isAvailable()) {
+            return 0;
+        }
+        return Ftb.getOnlineMemberCount(teamId);
+    }
+
+    /** Returns the team's display name, if the team is known. */
+    public Optional<Component> getTeamName(UUID teamId) {
+        if (!isAvailable()) {
+            return Optional.empty();
+        }
+        return Ftb.getTeamName(teamId);
+    }
+
     private static boolean isAvailable() {
         return ModList.get().isLoaded(FTB_TEAMS_MOD_ID) && Ftb.isManagerLoaded();
     }
@@ -51,6 +68,16 @@ public final class TeamIntegrationService {
             return FTBTeamsAPI.api().getManager().getTeamByID(teamId)
                     .map(team -> team.getRankForPlayer(player.getUUID()).isOfficerOrBetter())
                     .orElse(false);
+        }
+
+        static int getOnlineMemberCount(UUID teamId) {
+            return FTBTeamsAPI.api().getManager().getTeamByID(teamId)
+                    .map(team -> team.getOnlineMembers().size())
+                    .orElse(0);
+        }
+
+        static Optional<Component> getTeamName(UUID teamId) {
+            return FTBTeamsAPI.api().getManager().getTeamByID(teamId).map(Team::getName);
         }
     }
 }

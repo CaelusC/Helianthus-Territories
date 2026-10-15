@@ -47,5 +47,20 @@
   "territorywar.map.edit.success": "Updated chunks of region %s",
   "territorywar.map.edit.overlap": "Some chunks already belong to a region other than %s",
   "territorywar.map.edit.no_chunks_left": "Region %s cannot be left without chunks; delete it instead",
-  "territorywar.screen.create.confirm": "Create"
+  "territorywar.screen.create.confirm": "Create",
+  "territorywar.raid.announce": "%s is planning a Raid on %s. The raid will commence in %s hour(s).",
+  "territorywar.raid.not_owned": "Region %s is not owned by a team, so it cannot be raided",
+  "territorywar.raid.already_raided": "Region %s is already being raided",
+  "territorywar.raid.not_team_leader": "You must be an officer or owner of an FTB team to raid region %s",
+  "territorywar.raid.own_region": "Your team already owns region %s",
+  "territorywar.raid.not_enough_attackers": "At least %s members of your team must be online to declare a raid",
+  "territorywar.raid.not_enough_defenders": "At least %s members of the defending team must be online to declare a raid",
+  "territorywar.raid.defender_on_cooldown": "The team owning region %s was raided recently and cannot be raided yet",
+  "territorywar.raid.attacker_on_cooldown": "Your team raided recently and cannot declare another raid yet",
+  "territorywar.raid.insufficient_funds": "Raiding region %s costs %s %s but you only have %s",
+  "territorywar.map.raid.title": "Declare Raid",
+  "territorywar.map.raid.attackers": "Your team online: %s / %s",
+  "territorywar.map.raid.defenders": "Defenders online: %s / %s",
+  "territorywar.map.raid.warmup": "Warm-up: %s hour(s)",
+  "territorywar.map.raid.confirm": "Raid"
 }
