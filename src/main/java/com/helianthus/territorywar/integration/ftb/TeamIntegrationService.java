@@ -2,6 +2,7 @@ package com.helianthus.territorywar.integration.ftb;
 
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.Team;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
@@ -48,6 +49,14 @@ public final class TeamIntegrationService {
         return Ftb.getTeamName(teamId);
     }
 
+    /** Returns the team's owner if online, otherwise any online member, if the team is known. */
+    public Optional<ServerPlayer> getOnlineOwnerOrMember(UUID teamId) {
+        if (!isAvailable()) {
+            return Optional.empty();
+        }
+        return Ftb.getOnlineOwnerOrMember(teamId);
+    }
+
     private static boolean isAvailable() {
         return ModList.get().isLoaded(FTB_TEAMS_MOD_ID) && Ftb.isManagerLoaded();
     }
@@ -78,6 +87,14 @@ public final class TeamIntegrationService {
 
         static Optional<Component> getTeamName(UUID teamId) {
             return FTBTeamsAPI.api().getManager().getTeamByID(teamId).map(Team::getName);
+        }
+
+        static Optional<ServerPlayer> getOnlineOwnerOrMember(UUID teamId) {
+            return FTBTeamsAPI.api().getManager().getTeamByID(teamId).flatMap(team -> {
+                Collection<ServerPlayer> online = team.getOnlineMembers();
+                return online.stream().filter(player -> player.getUUID().equals(team.getOwner())).findFirst()
+                        .or(() -> online.stream().findFirst());
+            });
         }
     }
 }
