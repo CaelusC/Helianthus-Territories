@@ -42,6 +42,14 @@ class RegionTest {
     }
 
     @Test
+    void colorDefaultsAndSurvivesCopies() {
+        assertEquals(Region.DEFAULT_COLOR, unownedRegion(Set.of()).getColorRgb());
+        Region region = new Region(RegionId.random(), "spawn", Set.of(), null, 100, true, 0xFF12AB34);
+        assertEquals(0x12AB34, region.getColorRgb());
+        assertEquals(0x12AB34, region.withOwner(UUID.randomUUID()).withoutOwner().withForSale(false).getColorRgb());
+    }
+
+    @Test
     void withOwnerReplacesExistingOwner() {
         Region region = new Region(RegionId.random(), "spawn", Set.of(), UUID.randomUUID(), 100, true);
         UUID newTeam = UUID.randomUUID();

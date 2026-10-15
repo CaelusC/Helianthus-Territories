@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import org.junit.jupiter.api.Test;
 
 class TerritorySavedDataTest {
@@ -23,7 +24,7 @@ class TerritorySavedDataTest {
         Region owned = new Region(RegionId.random(), "spawn",
                 Set.of(new ChunkKey(0, 0, OVERWORLD), new ChunkKey(-1, 3, OVERWORLD)), UUID.randomUUID(), 250, false);
         Region unowned = new Region(RegionId.random(), "outpost",
-                Set.of(new ChunkKey(0, 0, NETHER)), null, 75, true);
+                Set.of(new ChunkKey(0, 0, NETHER)), null, 75, true, 0x40E0D0);
         TerritorySavedData original = new TerritorySavedData();
         original.addRegion(owned);
         original.addRegion(unowned);
@@ -38,12 +39,27 @@ class TerritorySavedDataTest {
             assertEquals(expected.getOwnerTeamId(), actual.getOwnerTeamId());
             assertEquals(expected.getPurchasePrice(), actual.getPurchasePrice());
             assertEquals(expected.isForSale(), actual.isForSale());
+            assertEquals(expected.getColorRgb(), actual.getColorRgb());
             for (ChunkKey chunk : expected.getChunks()) {
                 assertEquals(Optional.of(expected.getId()), loaded.getIndex().getRegion(chunk));
             }
         }
         assertTrue(loaded.getIndex().getRegion(new ChunkKey(1, 1, OVERWORLD)).isEmpty());
         assertFalse(loaded.isDirty());
+    }
+
+    @Test
+    void regionSavedWithoutColorLoadsDefaultColor() {
+        Region region = new Region(RegionId.random(), "spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), null, 100, true,
+                0x40E0D0);
+        TerritorySavedData original = new TerritorySavedData();
+        original.addRegion(region);
+        CompoundTag tag = original.save(new CompoundTag());
+        tag.getList("regions", Tag.TAG_COMPOUND).getCompound(0).remove("color");
+
+        TerritorySavedData loaded = TerritorySavedData.load(tag);
+
+        assertEquals(Region.DEFAULT_COLOR, loaded.getRegion(region.getId()).orElseThrow().getColorRgb());
     }
 
     @Test
