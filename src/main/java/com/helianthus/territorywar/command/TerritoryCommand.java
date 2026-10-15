@@ -30,7 +30,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
  * team leaders and {@code menu} to open the territory screen.
  */
 public final class TerritoryCommand {
-    private static final int ADMIN_PERMISSION_LEVEL = 2;
+    public static final int ADMIN_PERMISSION_LEVEL = 2;
 
     private TerritoryCommand() {
     }

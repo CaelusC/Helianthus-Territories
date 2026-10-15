@@ -3,6 +3,7 @@ package com.helianthus.territorywar.client;
 import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.integration.ftb.client.TerritoryScreen;
+import com.helianthus.territorywar.network.CreateRegionCodec;
 import com.helianthus.territorywar.network.RegionSyncCodec;
 import com.helianthus.territorywar.network.TerritoryNetwork;
 import com.mojang.logging.LogUtils;
@@ -34,6 +35,13 @@ public final class TerritoryClient {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeUUID(id.value());
         NetworkManager.sendToServer(TerritoryNetwork.PURCHASE_REGION, buf);
+    }
+
+    /** Asks the server to create a region from chunks an admin selected. */
+    public static void requestCreateRegion(CreateRegionCodec.Request request) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        CreateRegionCodec.write(buf, request);
+        NetworkManager.sendToServer(TerritoryNetwork.CREATE_REGION, buf);
     }
 
     private static void onSyncRegions(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
