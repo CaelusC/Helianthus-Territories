@@ -32,5 +32,7 @@
   "territorywar.screen.create.for_sale.yes": "For sale: Yes",
   "territorywar.screen.create.for_sale.no": "For sale: No",
   "territorywar.screen.create.color": "Map colour (hex)",
+  "territorywar.map.buy.title": "Buy Region",
+  "territorywar.map.buy.confirm": "Buy",
   "territorywar.screen.create.confirm": "Create"
 }
