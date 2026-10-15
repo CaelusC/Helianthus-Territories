@@ -3,9 +3,9 @@ package com.helianthus.territorywar.integration.ftb.client;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 
 /**
- * Muted topographic palette for the FTB Chunks map. Land is shaded by surface height in stepped
- * contour bands from a dark umber to a faded parchment; water is shaded by depth from a dusty slate
- * blue to a deep grey-blue. Laid out like FTB's own topography palette: index {@code y} for land and
+ * Brown topographic palette for the FTB Chunks map. Land is shaded by surface height in 4-block
+ * contour bands from a dark umber to a faded parchment; water is shaded by depth from a dark brown
+ * to a near-black brown. Laid out like FTB's own topography palette: index {@code y} for land and
  * {@code 256 + y} for water, where {@code y} is the surface (or sea floor) height clamped to 0..255.
  */
 public final class TopographicColorResolver {
@@ -14,12 +14,12 @@ public final class TopographicColorResolver {
 
     static final int LOWLAND = 0x6B5D4A;
     static final int HIGHLAND = 0xCBBFA3;
-    static final int SHALLOW_WATER = 0x8199A4;
-    static final int DEEP_WATER = 0x3D5567;
+    static final int SHALLOW_WATER = 0x1F1610;
+    static final int DEEP_WATER = 0x0C0805;
 
     private static final int LOWLAND_Y = SEA_LEVEL + 1;
     private static final int HIGHLAND_Y = 200;
-    private static final int LAND_BAND = 8;
+    private static final int LAND_BAND = 4;
     private static final int WATER_BAND = 4;
     private static final int MAX_DEPTH = 48;
 
