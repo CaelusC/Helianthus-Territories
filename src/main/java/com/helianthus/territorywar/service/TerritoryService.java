@@ -108,6 +108,20 @@ public final class TerritoryService {
         return PurchaseResult.SUCCESS;
     }
 
+    /** Gives a stored region to the team, e.g. after a won raid. Returns {@code false} if it is not stored. */
+    public boolean transferRegion(RegionId regionId, UUID teamId) {
+        Objects.requireNonNull(regionId, "regionId");
+        Objects.requireNonNull(teamId, "teamId");
+        Optional<Region> region = data.getRegion(regionId);
+        if (region.isEmpty()) {
+            return false;
+        }
+        data.assignOwner(regionId, teamId);
+        LOGGER.info("Region transferred: id={} name={} from={} to={}",
+                regionId.value(), region.get().getName(), region.get().getOwnerTeamId(), teamId);
+        return true;
+    }
+
     public Optional<Region> getRegion(RegionId id) {
         return data.getRegion(id);
     }

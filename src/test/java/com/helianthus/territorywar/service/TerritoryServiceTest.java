@@ -190,4 +190,27 @@ class TerritoryServiceTest {
 
         assertFalse(service.editRegionChunks(RegionId.random(), Set.of(new ChunkKey(0, 0, OVERWORLD)), Set.of()));
     }
+
+    @Test
+    void transferRegionChangesOwner() {
+        TerritorySavedData data = new TerritorySavedData();
+        TerritoryService service = new TerritoryService(data);
+        RegionId id = service.createRegion("spawn", Set.of(new ChunkKey(0, 0, OVERWORLD)), 100, true);
+        UUID defender = UUID.randomUUID();
+        UUID attacker = UUID.randomUUID();
+        service.completePurchase(id, defender);
+        data.setDirty(false);
+
+        assertTrue(service.transferRegion(id, attacker));
+
+        assertEquals(attacker, service.getRegion(id).orElseThrow().getOwnerTeamId());
+        assertTrue(data.isDirty());
+    }
+
+    @Test
+    void transferUnknownRegionReturnsFalse() {
+        TerritoryService service = new TerritoryService(new TerritorySavedData());
+
+        assertFalse(service.transferRegion(RegionId.random(), UUID.randomUUID()));
+    }
 }

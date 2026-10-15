@@ -49,6 +49,7 @@
   "territorywar.map.edit.no_chunks_left": "Region %s cannot be left without chunks; delete it instead",
   "territorywar.screen.create.confirm": "Create",
   "territorywar.raid.announce": "%s is planning a Raid on %s. The raid will commence in %s hour(s).",
+  "territorywar.raid.bossbar": "%s RAID: (%s) Victims, (%s) Raiders",
   "territorywar.raid.not_owned": "Region %s is not owned by a team, so it cannot be raided",
   "territorywar.raid.already_raided": "Region %s is already being raided",
   "territorywar.raid.not_team_leader": "You must be an officer or owner of an FTB team to raid region %s",
