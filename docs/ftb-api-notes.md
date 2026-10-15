@@ -58,6 +58,18 @@ Entry format:
 - Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: client only. Used from `integration.ftb.client` only.
 
+### FTB Library UI colour picker, purchase dialog and map tools
+- Signatures:
+  - `TextBox#setText(String)` (`final`, delegates to `setText(String, boolean)`, which rejects text failing the filter and calls `onTextChanged()`)
+  - `TextField#setMaxWidth(int)`, `TextField#setColor(Color4I)`, `TextField#setText(Component)` (all return `TextField`)
+  - `Color4I#rgb(int)` (`static`, opaque from `0xRRGGBB`)
+  - `BaseScreen#drawBackground(GuiGraphics, Theme, int x, int y, int w, int h)` (default draws `Theme#drawGui` for the screen rect)
+  - `Widget#getGui()` (returns the root `BaseScreen`), `Widget#getMouseX()` / `#getMouseY()`, `Panel#add(Widget)`
+  - `Panel#mousePressed` walks children from last to first and stops at the first enabled, drawn child returning true, so a widget added after a full-size panel is hit-tested first
+- Artifact/version: `curse.maven:ftb-library-forge-404465:8226927` (ftblibrary 2001.2.13)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. Used from `integration.ftb.client` only.
+
 ## FTB Teams
 
 Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499810` (ftbteams 2001.3.2).
@@ -207,6 +219,15 @@ Artifact/version for every entry below: `curse.maven:ftb-chunks-forge-314906:821
   - `HeightUtils#getHeight(Level, ChunkAccess, BlockPos.MutableBlockPos)` (`dev.ftb.mods.ftbchunks.util`): called by `ChunkUpdateTask` starting 2 above the `MOTION_BLOCKING` heightmap; scans down, records the first water block and stops at the first non-water block that `skipBlock` rejects. `ChunkUpdateTask` stores that floor Y in `MapRegionData#height` and sets bit 15 of `waterLightAndBiome` when water was found. Dimensions with a ceiling start below the roof (FTB's cave view); overworld always scans from the surface.
 - Verified: `javap -c -p -l` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: internal classes, client only. Hooked only from `integration.ftb.client.mixin` with `remap = false` (FTB names are not obfuscated). Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump.
+
+### Large map screen (internal, mixin targets)
+- Signatures:
+  - `LargeMapScreen` (`dev.ftb.mods.ftbchunks.client.gui`, extends `BaseScreen`): `void addWidgets()`, `void alignWidgets()` (left column buttons at x 1, server settings button bottom right, top right free), `ResourceKey<Level> currentDimension()`. Its `mousePressed` calls `BaseScreen#mousePressed` first, then records the drag start on left click and opens the waypoint context menu on right click.
+  - `RegionMapPanel` (same package, full-screen child of `LargeMapScreen`): `boolean mousePressed(MouseButton)` (after children, a left press over the panel sets `LargeMapScreen#grabbed` to start panning), `void mouseReleased(MouseButton)` (clears `grabbed`), `void draw(GuiGraphics, Theme, int, int, int, int)` (after drawing children, updates the hovered `blockX`/`blockZ` from the mouse), `BlockPos blockPos()` (hovered block from the last draw)
+  - `MapTileWidget` (same package): `public final MapRegion region`, `void draw(GuiGraphics, Theme, int x, int y, int w, int h)` (blits the 512x512 block region image to exactly that rect). Tiles are added to `RegionMapPanel` before map icons, so they draw beneath them.
+  - `MapRegion` (`dev.ftb.mods.ftbchunks.client.map`): `public final MapDimension dimension`, `public final XZ pos` (region coordinates, block >> 9, i.e. 32x32 chunks); `MapDimension#dimension` is `public final ResourceKey<Level>`; `XZ#x()` / `#z()` (`dev.ftb.mods.ftblibrary.math`)
+- Verified: `javap -c -p -l` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: internal classes, client only. Hooked only from `integration.ftb.client.mixin` with `remap = false`. Pinned to ftbchunks 2001.3.8; re-verify on any FTB Chunks version bump. A create region request sent from the map must stay under vanilla's 32767 byte `ServerboundCustomPayloadPacket` limit (constant checked in the Forge 1.20.1 jar).
 
 ## Architectury
 
