@@ -1,9 +1,12 @@
 {
   "territorywar.claim.manual_disabled": "Manual chunk claiming is disabled. Purchase a region to claim territory.",
   "territorywar.command.create.success": "Created region %s with id %s",
-  "territorywar.command.create.overlap": "This chunk already belongs to a region",
+  "territorywar.command.create.overlap": "Chunk %s, %s already belongs to region %s",
   "territorywar.command.delete.success": "Deleted region %s",
   "territorywar.command.unknown_region": "No region with id %s",
   "territorywar.command.buy.success": "Your team bought region %s",
-  "territorywar.command.buy.failed": "Could not buy region %s. It must be for sale, you must lead your team, and you must be able to pay its price."
+  "territorywar.command.buy.already_owned": "Region %s is already owned by a team",
+  "territorywar.command.buy.not_for_sale": "Region %s is not for sale",
+  "territorywar.command.buy.not_team_leader": "You must be an officer or owner of an FTB team to buy region %s",
+  "territorywar.command.buy.insufficient_funds": "Region %s costs %s %s but you only have %s"
 }

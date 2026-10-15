@@ -1,16 +1,20 @@
 package com.helianthus.territorywar.command;
 
 import com.helianthus.territorywar.core.ChunkKey;
+import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.integration.ftb.ChunkClaimIntegrationService;
 import com.helianthus.territorywar.integration.ftb.TeamIntegrationService;
+import com.helianthus.territorywar.service.PurchaseResult;
 import com.helianthus.territorywar.service.RegionPurchaseService;
 import com.helianthus.territorywar.service.TerritoryManager;
+import com.helianthus.territorywar.service.TerritoryService;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import java.util.Optional;
 import java.util.Set;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -60,13 +64,14 @@ public final class TerritoryCommand {
         ChunkPos pos = player.chunkPosition();
         ChunkKey chunk = new ChunkKey(pos.x, pos.z, player.level().dimension().location().toString());
 
-        RegionId id;
-        try {
-            id = TerritoryManager.get(source.getServer()).createRegion(name, Set.of(chunk), price, true);
-        } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.translatable("territorywar.command.create.overlap"));
+        TerritoryService territory = TerritoryManager.get(source.getServer());
+        Optional<RegionId> existing = territory.getRegionAt(chunk);
+        if (existing.isPresent()) {
+            source.sendFailure(Component.translatable("territorywar.command.create.overlap",
+                    pos.x, pos.z, existing.get().value().toString()));
             return 0;
         }
+        RegionId id = territory.createRegion(name, Set.of(chunk), price, true);
         String idText = id.value().toString();
         source.sendSuccess(() -> Component.translatable("territorywar.command.create.success", name, idText), true);
         return 1;
@@ -87,13 +92,32 @@ public final class TerritoryCommand {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
         RegionId id = new RegionId(UuidArgument.getUuid(context, "regionId"));
-        RegionPurchaseService purchases = new RegionPurchaseService(TerritoryManager.get(source.getServer()),
+        TerritoryService territory = TerritoryManager.get(source.getServer());
+        RegionPurchaseService purchases = new RegionPurchaseService(territory,
                 new TeamIntegrationService(), new ChunkClaimIntegrationService());
-        if (!purchases.purchaseRegion(player, id)) {
-            source.sendFailure(Component.translatable("territorywar.command.buy.failed", id.value().toString()));
+        PurchaseResult result = purchases.purchaseRegion(player, id);
+        if (result != PurchaseResult.SUCCESS) {
+            source.sendFailure(buyFailure(result, id, territory.getRegion(id), player));
             return 0;
         }
         source.sendSuccess(() -> Component.translatable("territorywar.command.buy.success", id.value().toString()), false);
         return 1;
+    }
+
+    private static Component buyFailure(PurchaseResult result, RegionId id, Optional<Region> region,
+            ServerPlayer player) {
+        String idText = id.value().toString();
+        String name = region.map(Region::getName).orElse(idText);
+        return switch (result) {
+            case REGION_NOT_FOUND -> Component.translatable("territorywar.command.unknown_region", idText);
+            case ALREADY_OWNED -> Component.translatable("territorywar.command.buy.already_owned", name);
+            case NOT_FOR_SALE -> Component.translatable("territorywar.command.buy.not_for_sale", name);
+            case NOT_TEAM_LEADER -> Component.translatable("territorywar.command.buy.not_team_leader", name);
+            case INSUFFICIENT_FUNDS -> Component.translatable("territorywar.command.buy.insufficient_funds",
+                    name, region.map(PurchaseResult::price).orElse(0),
+                    RegionPurchaseService.CURRENCY.getDescription(),
+                    player.getInventory().countItem(RegionPurchaseService.CURRENCY));
+            case SUCCESS -> throw new IllegalArgumentException("not a failure: " + result);
+        };
     }
 }

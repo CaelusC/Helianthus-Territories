@@ -58,22 +58,23 @@ public final class TerritoryService {
     }
 
     /**
-     * Gives an unowned, for-sale region to the team and takes it off the market. Returns
-     * {@code false}, leaving state unchanged, if the region is unknown, owned or not for sale.
+     * Gives an unowned, for-sale region to the team and takes it off the market. Returns why it
+     * failed, leaving state unchanged, if the region is unknown, owned or not for sale.
      */
-    public boolean completePurchase(RegionId regionId, UUID teamId) {
+    public PurchaseResult completePurchase(RegionId regionId, UUID teamId) {
         Objects.requireNonNull(regionId, "regionId");
         Objects.requireNonNull(teamId, "teamId");
         Optional<Region> region = data.getRegion(regionId);
-        if (region.isEmpty() || region.get().isOwned() || !region.get().isForSale()) {
-            return false;
+        PurchaseResult availability = PurchaseResult.availability(region);
+        if (availability != PurchaseResult.SUCCESS) {
+            return availability;
         }
         data.assignOwner(regionId, teamId);
         data.setForSale(regionId, false);
         LOGGER.info("Region sold: id={} name={} team={} chunks={} price={}",
                 regionId.value(), region.get().getName(), teamId, region.get().getChunks().size(),
                 region.get().getPurchasePrice());
-        return true;
+        return PurchaseResult.SUCCESS;
     }
 
     public Optional<Region> getRegion(RegionId id) {
