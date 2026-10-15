@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Routes large map clicks and drags to the territory admin selection and purchase dialog. */
+/** Routes large map clicks and drags to the territory admin tools and purchase dialog, and draws region labels. */
 @Mixin(value = RegionMapPanel.class, remap = false)
 public abstract class RegionMapPanelMixin {
     @Inject(method = "mousePressed", at = @At("HEAD"), cancellable = true)
@@ -28,6 +28,6 @@ public abstract class RegionMapPanelMixin {
 
     @Inject(method = "draw", at = @At("TAIL"))
     private void territorywar$draw(GuiGraphics graphics, Theme theme, int x, int y, int w, int h, CallbackInfo ci) {
-        LargeMapRegionTools.onMapDrawn((RegionMapPanel) (Object) this);
+        LargeMapRegionTools.onMapDrawn((RegionMapPanel) (Object) this, graphics);
     }
 }

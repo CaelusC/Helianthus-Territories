@@ -3,29 +3,30 @@ package com.helianthus.territorywar.integration.ftb.client.mixin;
 import com.helianthus.territorywar.integration.ftb.client.LargeMapRegionTools;
 import dev.ftb.mods.ftbchunks.client.gui.LargeMapScreen;
 import dev.ftb.mods.ftblibrary.ui.SimpleTextButton;
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Adds the territory admin mode toggle to the FTB Chunks large map. */
+/** Adds the territory admin toggle and admin tool buttons to the FTB Chunks large map. */
 @Mixin(value = LargeMapScreen.class, remap = false)
 public abstract class LargeMapScreenMixin {
     @Unique
-    private SimpleTextButton territorywar$adminButton;
+    private List<SimpleTextButton> territorywar$buttons;
 
     @Inject(method = "addWidgets", at = @At("TAIL"))
-    private void territorywar$addAdminButton(CallbackInfo ci) {
+    private void territorywar$addButtons(CallbackInfo ci) {
         LargeMapScreen screen = (LargeMapScreen) (Object) this;
-        territorywar$adminButton = LargeMapRegionTools.createAdminButton(screen);
-        screen.add(territorywar$adminButton);
+        territorywar$buttons = LargeMapRegionTools.createButtons(screen);
+        territorywar$buttons.forEach(screen::add);
     }
 
     @Inject(method = "alignWidgets", at = @At("TAIL"))
-    private void territorywar$alignAdminButton(CallbackInfo ci) {
-        if (territorywar$adminButton != null) {
-            LargeMapRegionTools.alignAdminButton(territorywar$adminButton, ((LargeMapScreen) (Object) this).width);
+    private void territorywar$alignButtons(CallbackInfo ci) {
+        if (territorywar$buttons != null) {
+            LargeMapRegionTools.alignButtons(territorywar$buttons, ((LargeMapScreen) (Object) this).width);
         }
     }
 }
