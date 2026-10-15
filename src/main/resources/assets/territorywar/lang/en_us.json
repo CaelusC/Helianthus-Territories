@@ -36,5 +36,8 @@
   "territorywar.map.selection.too_large": "Selection of %s chunks is too large (max %s)",
   "territorywar.map.buy.title": "Buy Region",
   "territorywar.map.buy.confirm": "Buy",
+  "territorywar.map.edit.success": "Updated chunks of region %s",
+  "territorywar.map.edit.overlap": "Some chunks already belong to a region other than %s",
+  "territorywar.map.edit.no_chunks_left": "Region %s cannot be left without chunks; delete it instead",
   "territorywar.screen.create.confirm": "Create"
 }

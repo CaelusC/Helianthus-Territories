@@ -27,7 +27,8 @@ import org.slf4j.Logger;
 
 /**
  * Architectury packets between server and client: {@link #SYNC_REGIONS} and {@link #OPEN_SCREEN}
- * go to the client, {@link #PURCHASE_REGION} and {@link #CREATE_REGION} come from it. Client
+ * go to the client, {@link #PURCHASE_REGION}, {@link #CREATE_REGION}, {@link #DELETE_REGION} and
+ * {@link #EDIT_REGION_CHUNKS} come from it. Client
  * receivers are registered in {@code client.TerritoryClient}.
  */
 public final class TerritoryNetwork {
@@ -42,6 +43,11 @@ public final class TerritoryNetwork {
     /** C2S: admin request to create a region from selected chunks, see {@link CreateRegionCodec}. */
     public static final ResourceLocation CREATE_REGION =
             new ResourceLocation(TerritoryWar.MODID, "create_region_from_gui");
+    /** C2S: admin request to delete a region, see {@link RegionEditCodec#writeDelete}. */
+    public static final ResourceLocation DELETE_REGION = new ResourceLocation(TerritoryWar.MODID, "delete_region");
+    /** C2S: admin request to add chunks to or remove chunks from a region, see {@link RegionEditCodec.ChunkEdit}. */
+    public static final ResourceLocation EDIT_REGION_CHUNKS =
+            new ResourceLocation(TerritoryWar.MODID, "edit_region_chunks");
 
     private TerritoryNetwork() {
     }
@@ -49,6 +55,9 @@ public final class TerritoryNetwork {
     public static void register() {
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, PURCHASE_REGION, TerritoryNetwork::onPurchaseRequest);
         NetworkManager.registerReceiver(NetworkManager.Side.C2S, CREATE_REGION, TerritoryNetwork::onCreateRegionRequest);
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, DELETE_REGION, TerritoryNetwork::onDeleteRegionRequest);
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, EDIT_REGION_CHUNKS,
+                TerritoryNetwork::onEditRegionChunksRequest);
         MinecraftForge.EVENT_BUS.addListener(TerritoryNetwork::onPlayerLoggedIn);
         LOGGER.info("Registered territory network packets");
     }
@@ -131,5 +140,48 @@ public final class TerritoryNetwork {
             player.sendSystemMessage(Component.translatable("territorywar.command.create.success",
                     request.name(), id.value().toString()));
         });
+    }
+
+    private static void onDeleteRegionRequest(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
+        RegionId id = RegionEditCodec.readDelete(buf);
+        context.queue(() -> {
+            if (!(context.getPlayer() instanceof ServerPlayer player)) {
+                return;
+            }
+            RegionEditHandler.Result result = RegionEditHandler.delete(TerritoryManager.get(player.server),
+                    player.hasPermissions(TerritoryCommand.ADMIN_PERMISSION_LEVEL), id);
+            reportEdit(player, result, id, "territorywar.command.delete.success");
+        });
+    }
+
+    private static void onEditRegionChunksRequest(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
+        RegionEditCodec.ChunkEdit edit = RegionEditCodec.readChunkEdit(buf);
+        context.queue(() -> {
+            if (!(context.getPlayer() instanceof ServerPlayer player)) {
+                return;
+            }
+            RegionEditHandler.Result result = RegionEditHandler.editChunks(TerritoryManager.get(player.server),
+                    player.hasPermissions(TerritoryCommand.ADMIN_PERMISSION_LEVEL), edit);
+            reportEdit(player, result, edit.id(), "territorywar.map.edit.success");
+        });
+    }
+
+    private static void reportEdit(ServerPlayer player, RegionEditHandler.Result result, RegionId id,
+            String successKey) {
+        String regionId = id.value().toString();
+        switch (result) {
+            case SUCCESS -> {
+                syncRegionsToAll(player.server);
+                player.sendSystemMessage(Component.translatable(successKey, regionId));
+            }
+            case NOT_ADMIN -> LOGGER.debug("Ignoring region edit request from non-admin {}",
+                    player.getGameProfile().getName());
+            case UNKNOWN_REGION -> player.sendSystemMessage(Component.translatable(
+                    "territorywar.command.unknown_region", regionId).withStyle(ChatFormatting.RED));
+            case OVERLAP -> player.sendSystemMessage(Component.translatable(
+                    "territorywar.map.edit.overlap", regionId).withStyle(ChatFormatting.RED));
+            case NO_CHUNKS_LEFT -> player.sendSystemMessage(Component.translatable(
+                    "territorywar.map.edit.no_chunks_left", regionId).withStyle(ChatFormatting.RED));
+        }
     }
 }
