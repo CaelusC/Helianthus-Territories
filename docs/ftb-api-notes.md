@@ -22,6 +22,21 @@ Entry format:
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: position type taken by every FTB Chunks claim/unclaim call. Accessors: `ChunkPos getChunkPos()`, `int x()`, `int z()`, `ResourceKey<Level> dimension()`, `ChunkDimPos offset(int, int)`.
 
+### FTB Library UI (selected classes)
+- Signatures:
+  - `BaseScreen`: `BaseScreen()`, `final void openGui()`, `final void refreshWidgets()`, `boolean onInit()`, `final void openYesNo(Component title, Component desc, Runnable onYes)`; default size 176x166 set in the constructor
+  - `Panel`: `Panel(Panel parent)`, `abstract void addWidgets()`, `abstract void alignWidgets()`, `void add(Widget)`, `List<Widget> getWidgets()`, `final int align(WidgetLayout)`
+  - `Widget`: `final void setPos(int, int)`, `final void setSize(int, int)`, `final Widget setPosAndSize(int, int, int, int)`, `BaseScreen getGui()`, `void addMouseOverText(TooltipList)`, `void playClickSound()`, public fields `posX`, `posY`, `width`, `height`
+  - `Button`: `abstract void onClicked(MouseButton)`; `SimpleTextButton(Panel parent, Component title, Icon icon)` (abstract)
+  - `TextField(Panel parent)`, `TextField setText(Component)` (wraps and resizes via `getGui().getTheme()`)
+  - `PanelScrollBar(Panel parent, Panel panel)`
+  - `ScreenWrapper` (extends vanilla `Screen`): `BaseScreen getGui()`; `BaseScreen#openGui` sets `new ScreenWrapper(this)` as the current screen
+  - `WidgetLayout.VERTICAL`, `Icon.empty()` (returns `Color4I`), `MouseButton#isLeft()`, `TooltipList#add(Component)`
+- Packages: `dev.ftb.mods.ftblibrary.ui`, `.ui.input`, `.icon`, `.util`
+- Artifact/version: `curse.maven:ftb-library-forge-404465:8226927` (ftblibrary 2001.2.13)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: client only. Used from `integration.ftb.client` only.
+
 ## FTB Teams
 
 Artifact/version for every entry below: `curse.maven:ftb-teams-forge-404468:7499810` (ftbteams 2001.3.2).
@@ -165,6 +180,13 @@ Artifact/version for every entry below: `curse.maven:architectury-api-419699:513
 - Class: `dev.architectury.event.CompoundEventResult`
 - Verified: `javap` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
 - Notes: `ClaimResult.customProblem(id)` uses `id` as a translation key for its message (`Component.translatable`).
+
+### NetworkManager (networking)
+- Signature: `static void registerReceiver(NetworkManager.Side side, ResourceLocation id, NetworkManager.NetworkReceiver receiver)`, `static void sendToPlayer(ServerPlayer, ResourceLocation, FriendlyByteBuf)`, `static void sendToPlayers(Iterable<ServerPlayer>, ResourceLocation, FriendlyByteBuf)`, `static void sendToServer(ResourceLocation, FriendlyByteBuf)`
+- Callbacks: `void NetworkReceiver#receive(FriendlyByteBuf buf, NetworkManager.PacketContext context)`; `PacketContext`: `Player getPlayer()`, `void queue(Runnable)`, `Env getEnvironment()`
+- Class: `dev.architectury.networking.NetworkManager` (`Side` enum: `S2C`, `C2S`)
+- Verified: `javap` / `javap -c` against the ModDevGradle-transformed jar in `~/.gradle/caches/8.14.5/transforms/*/transformed/`
+- Notes: on Forge (`dev.architectury.networking.forge.NetworkManagerImpl`) all ids share one Architectury event channel; registering an S2C receiver only stores it in a map. Read the buffer inside `receive`, then `queue` game-state work onto the main thread.
 
 ## Open questions
 
