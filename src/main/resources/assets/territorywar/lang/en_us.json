@@ -31,5 +31,6 @@
   "territorywar.screen.create.price": "Price",
   "territorywar.screen.create.for_sale.yes": "For sale: Yes",
   "territorywar.screen.create.for_sale.no": "For sale: No",
+  "territorywar.screen.create.color": "Map colour (hex)",
   "territorywar.screen.create.confirm": "Create"
 }
