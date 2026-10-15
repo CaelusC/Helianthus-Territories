@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 class TerritoryCommandTest {
     @Test
-    void registersAdminAndBuyBranches() {
+    void registersAdminBuyAndMenuBranches() {
         CommandDispatcher<CommandSourceStack> dispatcher = new CommandDispatcher<>();
         TerritoryCommand.register(dispatcher);
 
@@ -20,5 +20,6 @@ class TerritoryCommandTest {
         assertNotNull(admin.getChild("create").getChild("name").getChild("price").getCommand());
         assertNotNull(admin.getChild("delete").getChild("regionId").getCommand());
         assertNotNull(root.getChild("buy").getChild("regionId").getCommand());
+        assertNotNull(root.getChild("menu").getCommand());
     }
 }

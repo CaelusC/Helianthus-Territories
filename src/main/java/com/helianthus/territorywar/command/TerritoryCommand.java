@@ -5,6 +5,7 @@ import com.helianthus.territorywar.core.Region;
 import com.helianthus.territorywar.core.RegionId;
 import com.helianthus.territorywar.integration.ftb.ChunkClaimIntegrationService;
 import com.helianthus.territorywar.integration.ftb.TeamIntegrationService;
+import com.helianthus.territorywar.network.TerritoryNetwork;
 import com.helianthus.territorywar.service.PurchaseResult;
 import com.helianthus.territorywar.service.RegionPurchaseService;
 import com.helianthus.territorywar.service.TerritoryManager;
@@ -25,8 +26,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 /**
- * {@code /territory} command tree: {@code admin create|delete} for operators and {@code buy} for
- * team leaders.
+ * {@code /territory} command tree: {@code admin create|delete} for operators, {@code buy} for
+ * team leaders and {@code menu} to open the territory screen.
  */
 public final class TerritoryCommand {
     private static final int ADMIN_PERMISSION_LEVEL = 2;
@@ -52,7 +53,9 @@ public final class TerritoryCommand {
                                         .executes(TerritoryCommand::delete))))
                 .then(Commands.literal("buy")
                         .then(Commands.argument("regionId", UuidArgument.uuid())
-                                .executes(TerritoryCommand::buy))));
+                                .executes(TerritoryCommand::buy)))
+                .then(Commands.literal("menu")
+                        .executes(TerritoryCommand::menu)));
     }
 
     /** Creates a for-sale region from the chunk the player is standing in. */
@@ -72,6 +75,7 @@ public final class TerritoryCommand {
             return 0;
         }
         RegionId id = territory.createRegion(name, Set.of(chunk), price, true);
+        TerritoryNetwork.syncRegionsToAll(source.getServer());
         String idText = id.value().toString();
         source.sendSuccess(() -> Component.translatable("territorywar.command.create.success", name, idText), true);
         return 1;
@@ -84,6 +88,7 @@ public final class TerritoryCommand {
             source.sendFailure(Component.translatable("territorywar.command.unknown_region", id.value().toString()));
             return 0;
         }
+        TerritoryNetwork.syncRegionsToAll(source.getServer());
         source.sendSuccess(() -> Component.translatable("territorywar.command.delete.success", id.value().toString()), true);
         return 1;
     }
@@ -100,11 +105,19 @@ public final class TerritoryCommand {
             source.sendFailure(buyFailure(result, id, territory.getRegion(id), player));
             return 0;
         }
+        TerritoryNetwork.syncRegionsToAll(source.getServer());
         source.sendSuccess(() -> Component.translatable("territorywar.command.buy.success", id.value().toString()), false);
         return 1;
     }
 
-    private static Component buyFailure(PurchaseResult result, RegionId id, Optional<Region> region,
+    /** Opens the territory screen on the player's client. */
+    private static int menu(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        TerritoryNetwork.openScreen(context.getSource().getPlayerOrException());
+        return 1;
+    }
+
+    /** Chat message explaining why a purchase failed. */
+    public static Component buyFailure(PurchaseResult result, RegionId id, Optional<Region> region,
             ServerPlayer player) {
         String idText = id.value().toString();
         String name = region.map(Region::getName).orElse(idText);
